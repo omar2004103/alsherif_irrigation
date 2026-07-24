@@ -1,0 +1,208 @@
+@import url('https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&family=Tajawal:wght@300;400;500;700;800;900&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Al Sherif — engineering blue + leaf green (approved design system) */
+    --background: 216 20% 98%;
+    --foreground: 210 84% 12%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 210 84% 12%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 210 84% 12%;
+
+    --primary: 210 82% 23%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 115 43% 42%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 216 22% 95%;
+    --muted-foreground: 220 9% 46%;
+
+    --accent: 210 40% 96%;
+    --accent-foreground: 210 82% 23%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 216 22% 92%;
+    --input: 216 22% 92%;
+    --ring: 210 82% 23%;
+
+    --radius: 0.875rem;
+
+    /* Brand tokens */
+    --sherif-blue: 210 82% 23%;
+    --sherif-blue-deep: 210 84% 12%;
+    --sherif-blue-light: 210 66% 35%;
+    --leaf: 115 43% 42%;
+    --leaf-light: 115 43% 92%;
+    --leaf-dark: 123 41% 28%;
+    --water: 190 89% 42%;
+    --gold: 32 95% 44%;
+    --gold-light: 32 95% 94%;
+    --steel: 220 13% 26%;
+    --line: 216 22% 92%;
+    --canvas: 216 20% 98%;
+    /* Legacy aliases kept so older sections compile */
+    --emerald: 210 82% 23%;
+    --emerald-light: 210 40% 96%;
+    --emerald-dark: 210 84% 12%;
+    --ocean: 210 66% 35%;
+    --ocean-light: 210 40% 96%;
+    --ocean-dark: 210 84% 15%;
+    --sand: 216 20% 98%;
+
+    --gradient-hero: linear-gradient(135deg, hsl(210 84% 12%) 0%, hsl(210 82% 23%) 55%, hsl(210 66% 35%) 100%);
+    --gradient-hero-overlay: linear-gradient(180deg, hsla(210, 84%, 8%, 0.72), hsla(210, 82%, 15%, 0.55));
+    --gradient-card: linear-gradient(145deg, hsl(0 0% 100%), hsl(216 20% 98%));
+    --gradient-accent: linear-gradient(135deg, hsl(115 43% 42%), hsl(123 41% 30%));
+    --gradient-ocean: linear-gradient(135deg, hsl(210 66% 35%), hsl(210 82% 23%));
+    --gradient-leaf-blue: linear-gradient(135deg, hsl(210 82% 23%), hsl(115 43% 42%));
+
+    --shadow-card: 0 1px 2px hsla(210, 40%, 15%, 0.04), 0 4px 20px -8px hsla(210, 40%, 15%, 0.08);
+    --shadow-card-hover: 0 6px 12px -4px hsla(210, 40%, 15%, 0.08), 0 20px 40px -12px hsla(210, 60%, 20%, 0.18);
+    --shadow-hero: 0 24px 80px -20px hsla(210, 84%, 12%, 0.5);
+    --shadow-button: 0 4px 14px -4px hsla(210, 82%, 23%, 0.35);
+
+    --ease-brand: cubic-bezier(0.2, 0.8, 0.2, 1);
+
+    --sidebar-background: 160 30% 10%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 152 55% 45%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 160 25% 15%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 160 20% 18%;
+    --sidebar-ring: 152 55% 45%;
+  }
+
+  .dark {
+    --background: 160 30% 6%;
+    --foreground: 150 15% 93%;
+    --card: 160 25% 10%;
+    --card-foreground: 150 15% 93%;
+    --popover: 160 25% 10%;
+    --popover-foreground: 150 15% 93%;
+    --primary: 152 55% 45%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 200 45% 50%;
+    --secondary-foreground: 0 0% 100%;
+    --muted: 160 20% 15%;
+    --muted-foreground: 150 10% 60%;
+    --accent: 152 30% 18%;
+    --accent-foreground: 152 40% 80%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 160 20% 18%;
+    --input: 160 20% 18%;
+    --ring: 152 55% 45%;
+    --sidebar-background: 160 30% 5%;
+    --sidebar-foreground: 0 0% 95%;
+    --sidebar-primary: 152 55% 45%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 160 25% 10%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 160 20% 12%;
+    --sidebar-ring: 152 55% 45%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  html {
+    direction: rtl;
+  }
+
+  body {
+    @apply bg-background text-foreground font-body antialiased;
+    font-feature-settings: "kern", "ss01", "cv11";
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading font-bold tracking-tight;
+  }
+}
+
+@layer utilities {
+  .gradient-hero {
+    background: var(--gradient-hero);
+  }
+  .gradient-hero-overlay {
+    background: var(--gradient-hero-overlay);
+  }
+  .gradient-card {
+    background: var(--gradient-card);
+  }
+  .gradient-accent {
+    background: var(--gradient-accent);
+  }
+  .gradient-ocean {
+    background: var(--gradient-ocean);
+  }
+  .gradient-leaf-blue {
+    background: var(--gradient-leaf-blue);
+  }
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+  .shadow-card-hover {
+    box-shadow: var(--shadow-card-hover);
+  }
+  .shadow-hero {
+    box-shadow: var(--shadow-hero);
+  }
+  .shadow-button {
+    box-shadow: var(--shadow-button);
+  }
+  .text-gradient {
+    @apply bg-clip-text text-transparent;
+    background-image: var(--gradient-hero);
+  }
+  .text-gradient-leaf {
+    @apply bg-clip-text text-transparent;
+    background-image: var(--gradient-accent);
+  }
+  .blueprint-grid {
+    background-image:
+      linear-gradient(hsl(var(--sherif-blue) / 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, hsl(var(--sherif-blue) / 0.06) 1px, transparent 1px);
+    background-size: 40px 40px;
+  }
+  .section-label {
+    @apply inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.18em] text-primary;
+  }
+  .section-label::before {
+    content: '';
+    @apply block h-px w-8 bg-primary/60;
+  }
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  background: hsl(var(--muted));
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--primary) / 0.3);
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--primary) / 0.5);
+}

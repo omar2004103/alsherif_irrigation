@@ -1,0 +1,457 @@
+// Prisma schema file for Al-Sherif Irrigation Systems
+// Direct connection to Supabase PostgreSQL database with snake_case column mapping and default values
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ------------------------------------------------------
+// 1. ADMIN AUTHENTICATION & RBAC
+// ------------------------------------------------------
+
+enum AdminStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+}
+
+model AdminUser {
+  id             String        @id @default(uuid()) @db.Uuid
+  supabaseAuthId String?       @unique @map("supabase_auth_id") @db.Uuid
+  email          String        @unique
+  username       String        @unique
+  fullName       String        @default("المدير") @map("full_name")
+  phone          String?
+  avatarUrl      String?       @map("avatar_url")
+  status         AdminStatus   @default(ACTIVE)
+  roleId         String?       @map("role_id") @db.Uuid
+  role           Role?         @relation(fields: [roleId], references: [id], onDelete: SetNull)
+  lastLogin      DateTime?     @map("last_login")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @default(now()) @updatedAt @map("updated_at")
+  deletedAt      DateTime?     @map("deleted_at")
+
+  sessions       AdminSession[]
+  activityLogs   ActivityLog[]
+  notifications  Notification[]
+  articles       Article[]
+
+  @@map("admin_users")
+  @@index([email])
+  @@index([username])
+}
+
+model Role {
+  id          String           @id @default(uuid()) @db.Uuid
+  name        String           @unique
+  description String?
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @default(now()) @updatedAt @map("updated_at")
+
+  users       AdminUser[]
+  permissions RolePermission[]
+
+  @@map("roles")
+}
+
+model Permission {
+  id          String           @id @default(uuid()) @db.Uuid
+  key         String           @unique
+  name        String
+  module      String
+  description String?
+
+  roles       RolePermission[]
+
+  @@map("permissions")
+}
+
+model RolePermission {
+  roleId       String     @map("role_id") @db.Uuid
+  permissionId String     @map("permission_id") @db.Uuid
+
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+  @@map("role_permissions")
+}
+
+model AdminSession {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @map("user_id") @db.Uuid
+  user      AdminUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+  token     String    @unique
+  ipAddress String?   @map("ip_address")
+  userAgent String?   @map("user_agent")
+  expiresAt DateTime  @map("expires_at")
+  createdAt DateTime  @default(now()) @map("created_at")
+
+  @@map("admin_sessions")
+}
+
+// ------------------------------------------------------
+// 2. CATALOG: CATEGORIES, BRANDS, PRODUCTS & VARIANTS
+// ------------------------------------------------------
+
+enum ProductStatus {
+  AVAILABLE
+  OUT_OF_STOCK
+  ON_REQUEST
+  COMING_SOON
+}
+
+model Category {
+  id          String     @id @default(uuid()) @db.Uuid
+  name        String
+  slug        String     @unique
+  description String?
+  image       String?
+  icon        String?
+  order       Int        @default(0)
+  parentId    String?    @map("parent_id") @db.Uuid
+  parent      Category?  @relation("CategoryHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  children    Category[] @relation("CategoryHierarchy")
+  isFeatured  Boolean    @default(false) @map("is_featured")
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @default(now()) @updatedAt @map("updated_at")
+  deletedAt   DateTime?  @map("deleted_at")
+
+  products    Product[]
+
+  @@map("categories")
+  @@index([slug])
+}
+
+model Brand {
+  id          String           @id @default(uuid()) @db.Uuid
+  name        String
+  slug        String           @unique
+  logo        String?
+  website     String?
+  description String?
+  isFeatured  Boolean          @default(false) @map("is_featured")
+  order       Int              @default(0)
+  createdAt   DateTime         @default(now()) @map("created_at")
+  updatedAt   DateTime         @default(now()) @updatedAt @map("updated_at")
+  deletedAt   DateTime?        @map("deleted_at")
+
+  variants    ProductVariant[]
+
+  @@map("brands")
+  @@index([slug])
+}
+
+model Product {
+  id                   String                 @id @default(uuid()) @db.Uuid
+  title                String
+  englishTitle         String?                @map("english_title")
+  slug                 String                 @unique
+  description          String
+  shortDescription     String?                @map("short_description")
+  categoryId           String?                @map("category_id") @db.Uuid
+  category             Category?              @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  isFeatured           Boolean                @default(false) @map("is_featured")
+  isActive             Boolean                @default(true) @map("is_active")
+  order                Int                    @default(0)
+  
+  features             Json?
+  certificates         Json?
+
+  metaTitle            String?                @map("meta_title")
+  metaDescription      String?                @map("meta_description")
+  keywords             String?
+  ogImage              String?                @map("og_image")
+  canonicalUrl         String?                @map("canonical_url")
+
+  views                Int                    @default(0)
+  quoteRequestsCount   Int                    @default(0) @map("quote_requests_count")
+
+  createdAt            DateTime               @default(now()) @map("created_at")
+  updatedAt            DateTime               @default(now()) @updatedAt @map("updated_at")
+  deletedAt            DateTime?              @map("deleted_at")
+
+  variants             ProductVariant[]
+  images               ProductImage[]
+  specifications       ProductSpecification[]
+  quoteRequests        QuoteRequest[]
+  
+  relatedFrom          ProductRelated[]       @relation("ProductRelatedSource")
+  relatedTo            ProductRelated[]       @relation("ProductRelatedTarget")
+
+  @@map("products")
+  @@index([slug])
+  @@index([categoryId])
+}
+
+model ProductVariant {
+  id                   String        @id @default(uuid()) @db.Uuid
+  productId            String        @map("product_id") @db.Uuid
+  product              Product       @relation(fields: [productId], references: [id], onDelete: Cascade)
+  
+  brandId              String?       @map("brand_id") @db.Uuid
+  brand                Brand?        @relation(fields: [brandId], references: [id], onDelete: SetNull)
+  
+  name                 String?
+  sku                  String?       @unique
+  model                String?
+  countryOfOrigin      String?       @map("country_of_origin")
+  
+  status               ProductStatus @default(AVAILABLE)
+  stock                Int           @default(0)
+  price                Decimal?      @db.Decimal(10, 2)
+  discountPrice        Decimal?      @map("discount_price") @db.Decimal(10, 2)
+  showPrice            Boolean       @default(true) @map("show_price")
+
+  catalogUrl           String?       @map("catalog_url")
+  installationGuideUrl String?       @map("installation_guide_url")
+  datasheetUrl         String?       @map("datasheet_url")
+  
+  isDefault            Boolean       @default(false) @map("is_default")
+  order                Int           @default(0)
+
+  createdAt            DateTime      @default(now()) @map("created_at")
+  updatedAt            DateTime      @default(now()) @updatedAt @map("updated_at")
+
+  @@map("product_variants")
+  @@index([productId])
+  @@index([brandId])
+  @@index([sku])
+  @@index([status])
+}
+
+model ProductRelated {
+  productId        String  @map("product_id") @db.Uuid
+  relatedProductId String  @map("related_product_id") @db.Uuid
+
+  product          Product @relation("ProductRelatedSource", fields: [productId], references: [id], onDelete: Cascade)
+  relatedProduct   Product @relation("ProductRelatedTarget", fields: [relatedProductId], references: [id], onDelete: Cascade)
+
+  @@id([productId, relatedProductId])
+  @@map("product_related")
+}
+
+model ProductImage {
+  id        String   @id @default(uuid()) @db.Uuid
+  productId String   @map("product_id") @db.Uuid
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  url       String
+  altText   String?  @map("alt_text")
+  isPrimary Boolean  @default(false) @map("is_primary")
+  order     Int      @default(0)
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("product_images")
+}
+
+model ProductSpecification {
+  id        String   @id @default(uuid()) @db.Uuid
+  productId String   @map("product_id") @db.Uuid
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  key       String
+  value     String
+  group     String?
+  order     Int      @default(0)
+
+  @@map("product_specifications")
+}
+
+// ------------------------------------------------------
+// 3. SERVICES & ARTICLES (BLOG)
+// ------------------------------------------------------
+
+model Service {
+  id          String    @id @default(uuid()) @db.Uuid
+  title       String
+  slug        String    @unique
+  description String
+  content     String?
+  icon        String?
+  image       String?
+  isFeatured  Boolean   @default(false) @map("is_featured")
+  isActive    Boolean   @default(true) @map("is_active")
+  order       Int       @default(0)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @default(now()) @updatedAt @map("updated_at")
+  deletedAt   DateTime? @map("deleted_at")
+
+  @@map("services")
+  @@index([slug])
+}
+
+model Article {
+  id              String     @id @default(uuid()) @db.Uuid
+  title           String
+  slug            String     @unique
+  summary         String?
+  content         String
+  coverImage      String?    @map("cover_image")
+  authorId        String?    @map("author_id") @db.Uuid
+  author          AdminUser? @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  category        String?
+  tags            String[]
+  isPublished     Boolean    @default(false) @map("is_published")
+  publishedAt     DateTime?  @map("published_at")
+  metaTitle       String?    @map("meta_title")
+  metaDescription String?    @map("meta_description")
+  createdAt       DateTime   @default(now()) @map("created_at")
+  updatedAt       DateTime   @default(now()) @updatedAt @map("updated_at")
+  deletedAt       DateTime?  @map("deleted_at")
+
+  @@map("articles")
+  @@index([slug])
+}
+
+// ------------------------------------------------------
+// 4. WEBSITE SETTINGS, HOMEPAGE, SEO & FOOTER
+// ------------------------------------------------------
+
+model WebsiteSetting {
+  id          String   @id @default(uuid()) @db.Uuid
+  key         String   @unique
+  value       String
+  group       String   @default("general")
+  description String?
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("website_settings")
+  @@index([key])
+}
+
+model HomepageContent {
+  id         String   @id @default(uuid()) @db.Uuid
+  sectionKey String   @unique @map("section_key")
+  title      String?
+  subtitle   String?
+  content    Json?
+  isVisible  Boolean  @default(true) @map("is_visible")
+  order      Int      @default(0)
+  updatedAt  DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("homepage_contents")
+}
+
+model SeoSetting {
+  id          String   @id @default(uuid()) @db.Uuid
+  pageKey     String   @unique @map("page_key")
+  title       String
+  description String
+  keywords    String?
+  ogImage     String?  @map("og_image")
+  canonical   String?
+  updatedAt   DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("seo_settings")
+}
+
+model FooterContent {
+  id        String   @id @default(uuid()) @db.Uuid
+  section   String
+  title     String
+  content   Json
+  order     Int      @default(0)
+  isVisible Boolean  @default(true) @map("is_visible")
+  updatedAt DateTime @default(now()) @updatedAt @map("updated_at")
+
+  @@map("footer_contents")
+}
+
+// ------------------------------------------------------
+// 5. CUSTOMER INTERACTIONS: MESSAGES & QUOTE REQUESTS
+// ------------------------------------------------------
+
+enum InquiryStatus {
+  NEW
+  IN_PROGRESS
+  CLOSED
+  ARCHIVED
+}
+
+model ContactMessage {
+  id        String        @id @default(uuid()) @db.Uuid
+  name      String
+  email     String
+  phone     String
+  subject   String?
+  message   String
+  status    InquiryStatus @default(NEW)
+  createdAt DateTime      @default(now()) @map("created_at")
+  updatedAt DateTime      @default(now()) @updatedAt @map("updated_at")
+
+  @@map("contact_messages")
+}
+
+model QuoteRequest {
+  id             String        @id @default(uuid()) @db.Uuid
+  customerName   String        @map("customer_name")
+  company        String?
+  email          String?
+  phone          String
+  productId      String?       @map("product_id") @db.Uuid
+  product        Product?      @relation(fields: [productId], references: [id], onDelete: SetNull)
+  projectDetails String?       @map("project_details")
+  items          Json?
+  status         InquiryStatus @default(NEW)
+  source         String        @default("website")
+  createdAt      DateTime      @default(now()) @map("created_at")
+  updatedAt      DateTime      @default(now()) @updatedAt @map("updated_at")
+
+  @@map("quote_requests")
+}
+
+// ------------------------------------------------------
+// 6. MEDIA LIBRARY, NOTIFICATIONS & ACTIVITY LOGS
+// ------------------------------------------------------
+
+model Media {
+  id           String   @id @default(uuid()) @db.Uuid
+  filename     String
+  originalName String   @map("original_name")
+  mimeType     String   @map("mime_type")
+  size         Int
+  url          String
+  path         String
+  altText      String?  @map("alt_text")
+  folder       String   @default("general")
+  createdById  String?  @map("created_by_id") @db.Uuid
+  createdAt    DateTime @default(now()) @map("created_at")
+
+  @@map("media_library")
+}
+
+model Notification {
+  id        String     @id @default(uuid()) @db.Uuid
+  userId    String?    @map("user_id") @db.Uuid
+  user      AdminUser? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  title     String
+  message   String
+  type      String     @default("info")
+  link      String?
+  isRead    Boolean    @default(false) @map("is_read")
+  createdAt DateTime   @default(now()) @map("created_at")
+
+  @@map("notifications")
+}
+
+model ActivityLog {
+  id        String     @id @default(uuid()) @db.Uuid
+  userId    String?    @map("user_id") @db.Uuid
+  user      AdminUser? @relation(fields: [userId], references: [id], onDelete: SetNull)
+  action    String
+  entity    String
+  entityId  String?    @map("entity_id")
+  details   Json?
+  ipAddress String?    @map("ip_address")
+  userAgent String?    @map("user_agent")
+  createdAt DateTime   @default(now()) @map("created_at")
+
+  @@map("activity_logs")
+  @@index([userId])
+  @@index([entity])
+}

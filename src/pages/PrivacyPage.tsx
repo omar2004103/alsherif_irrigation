@@ -51,7 +51,7 @@ const PrivacyPage = () => (
           </div>
           <div>
             <h2 className="mb-3 text-xl font-bold">7. التواصل</h2>
-            <p className="text-muted-foreground leading-relaxed">لأي استفسار حول سياسة الخصوصية، تواصل معنا على: <span dir="ltr">01111661177</span> أو <span dir="ltr">01122811500</span>.</p>
+            <p className="text-muted-foreground leading-relaxed">لأي استفسار حول سياسة الخصوصية، تواصل معنا على: <span dir="ltr">01111661177</span> أو <span dir="ltr">01008028048</span>.</p>
           </div>
         </div>
       </section>

@@ -39,17 +39,20 @@ function Gallery({ images, title }: { images: string[]; title: string }) {
   const openZoom = (i: number) => { setZoomIdx(i); setZoomOpen(true); };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-4">
       <div
-        className="group relative aspect-square overflow-hidden rounded-2xl border border-border bg-accent/30 cursor-zoom-in"
+        className="group relative aspect-square w-full overflow-hidden rounded-3xl border border-border bg-gradient-to-tr from-accent/50 via-card to-accent/30 p-6 cursor-zoom-in shadow-card transition-all duration-500 hover:shadow-card-hover flex items-center justify-center"
         onClick={() => openZoom(active)}
       >
         {images[active] ? (
-          <img
-            src={images[active]}
-            alt={title}
-            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-          />
+          <>
+            <img src={images[active]} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full object-cover opacity-25 blur-2xl scale-125" />
+            <img
+              src={images[active]}
+              alt={title}
+              className="relative z-10 max-h-full max-w-full object-contain drop-shadow-xl transition-transform duration-500 group-hover:scale-105"
+            />
+          </>
         ) : (
           <div className="flex h-full items-center justify-center text-muted-foreground/30">
             <Package className="h-24 w-24" strokeWidth={1.2} />
@@ -57,7 +60,7 @@ function Gallery({ images, title }: { images: string[]; title: string }) {
         )}
         <button
           onClick={(e) => { e.stopPropagation(); openZoom(active); }}
-          className="absolute bottom-4 left-4 flex h-10 w-10 items-center justify-center rounded-full bg-card/95 text-primary shadow-card opacity-0 transition-opacity group-hover:opacity-100"
+          className="absolute bottom-4 left-4 z-20 flex h-10 w-10 items-center justify-center rounded-full bg-card/90 backdrop-blur-md text-primary shadow-hero opacity-0 transition-all duration-300 group-hover:opacity-100 group-hover:scale-110"
           aria-label="عرض بحجم كامل"
         >
           <ZoomIn className="h-4 w-4" />
@@ -65,16 +68,16 @@ function Gallery({ images, title }: { images: string[]; title: string }) {
       </div>
 
       {images.length > 1 && (
-        <div className="grid grid-cols-5 gap-2">
+        <div className="grid grid-cols-5 gap-2.5">
           {images.map((img, i) => (
             <button
               key={i}
               onClick={() => setActive(i)}
-              className={`aspect-square overflow-hidden rounded-lg border-2 transition-all ${
-                i === active ? 'border-primary shadow-card' : 'border-border opacity-70 hover:opacity-100'
+              className={`aspect-square overflow-hidden rounded-xl border-2 p-1 transition-all bg-accent/20 ${
+                i === active ? 'border-primary shadow-card ring-2 ring-primary/20 scale-105' : 'border-border opacity-70 hover:opacity-100'
               }`}
             >
-              <img src={img} alt="" className="h-full w-full object-cover" />
+              <img src={img} alt="" className="h-full w-full object-contain rounded-lg" />
             </button>
           ))}
         </div>

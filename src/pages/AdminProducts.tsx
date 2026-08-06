@@ -367,45 +367,52 @@ const AdminProducts = () => {
                 />
               </div>
 
-              <div className="sm:col-span-2">
-                <label className="mb-1 block font-bold text-foreground">الصورة الرئيسية للمنتج</label>
-                <div className="flex items-center gap-3">
+              <div className="sm:col-span-2 space-y-2">
+                <label className="block font-bold text-foreground">الصورة الرئيسية للمنتج (High-Res Image)</label>
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
                   <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" id="prod-main-img-file" />
-                  <label htmlFor="prod-main-img-file" className="cursor-pointer rounded-xl bg-primary px-4 py-2 text-white font-bold flex items-center gap-1.5 shrink-0">
-                    <Upload className="h-3.5 w-3.5" /> {uploading ? 'جاري الرفع...' : 'رفع صورة'}
+                  <label htmlFor="prod-main-img-file" className="cursor-pointer rounded-xl bg-primary px-5 py-3 text-white font-bold flex items-center justify-center gap-2 shrink-0 shadow-md hover:bg-primary/90 transition-all">
+                    <Upload className="h-4 w-4" /> {uploading ? 'جاري رفع المعالجة...' : 'رفع صورة فائقة الجودة'}
                   </label>
                   <input
                     value={imageUrl}
                     onChange={e => setImageUrl(e.target.value)}
-                    placeholder="أو ضع رابط الصورة هنا..."
-                    className="w-full rounded-xl border border-input bg-background p-2.5 text-xs outline-none"
+                    placeholder="أو ضع رابط الصورة المباشر..."
+                    className="w-full rounded-xl border border-input bg-background p-3 text-xs outline-none focus:border-primary"
                     dir="ltr"
                   />
                 </div>
                 {imageUrl && (
-                  <div className="mt-2 h-20 w-20 rounded-xl border border-border overflow-hidden">
-                    <img src={imageUrl} alt="Preview" className="h-full w-full object-cover" />
+                  <div className="mt-3 flex items-center gap-4 rounded-2xl border border-border bg-accent/30 p-3">
+                    <div className="relative h-24 w-24 rounded-xl border border-border/80 bg-card p-1.5 overflow-hidden flex items-center justify-center shadow-inner shrink-0">
+                      <img src={imageUrl} alt="Main Preview" className="max-h-full max-w-full object-contain rounded-lg drop-shadow" />
+                    </div>
+                    <div className="text-xs space-y-1">
+                      <span className="font-bold text-emerald-600 bg-emerald-500/10 px-2 py-0.5 rounded-md">✓ معتمدة للعرض النقائي</span>
+                      <p className="text-muted-foreground text-[11px]">سيتم عرض هذه الصورة بأعلى دقة ووضوح وبدون أي تشويه أو اقتطاع.</p>
+                    </div>
                   </div>
                 )}
               </div>
 
-              <div className="sm:col-span-2">
-                <label className="mb-1 block font-bold text-foreground">معرض صور إضافية (Multiple Gallery Images)</label>
+              <div className="sm:col-span-2 space-y-2">
+                <label className="block font-bold text-foreground">معرض صور إضافية للمنتج (Multiple Gallery Images)</label>
                 <div className="flex items-center gap-3">
                   <input type="file" accept="image/*" multiple onChange={handleGalleryUpload} className="hidden" id="prod-gallery-imgs-file" />
-                  <label htmlFor="prod-gallery-imgs-file" className="cursor-pointer rounded-xl border border-border bg-accent px-4 py-2 font-bold flex items-center gap-1.5 shrink-0">
-                    <Upload className="h-3.5 w-3.5" /> {uploading ? 'جاري الرفع...' : '+ إضافة صور متعددة'}
+                  <label htmlFor="prod-gallery-imgs-file" className="cursor-pointer rounded-xl border border-border bg-accent hover:bg-accent/80 px-5 py-3 font-bold flex items-center gap-2 shrink-0 transition-colors">
+                    <Upload className="h-4 w-4 text-primary" /> {uploading ? 'جاري الرفع...' : '+ رفع مجموعة صور إضافية'}
                   </label>
                 </div>
                 {galleryImages.length > 0 && (
-                  <div className="mt-2 flex flex-wrap gap-2">
+                  <div className="mt-3 grid grid-cols-4 sm:grid-cols-6 gap-3">
                     {galleryImages.map((img, i) => (
-                      <div key={i} className="relative h-14 w-14 rounded-lg border overflow-hidden">
-                        <img src={img} alt="" className="h-full w-full object-cover" />
+                      <div key={i} className="relative group aspect-square rounded-xl border border-border bg-card p-1 overflow-hidden flex items-center justify-center shadow-sm">
+                        <img src={img} alt="" className="max-h-full max-w-full object-contain rounded" />
                         <button
                           type="button"
                           onClick={() => setGalleryImages(galleryImages.filter((_, idx) => idx !== i))}
-                          className="absolute top-0.5 left-0.5 rounded-full bg-black/60 p-0.5 text-white hover:bg-rose-600"
+                          className="absolute top-1 left-1 rounded-full bg-rose-600 p-1 text-white opacity-0 group-hover:opacity-100 transition-opacity shadow"
+                          title="حذف الصورة"
                         >
                           <X className="h-3 w-3" />
                         </button>

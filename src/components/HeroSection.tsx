@@ -12,7 +12,7 @@ const HeroSection = () => {
   const heroTitle = s('hero_title', 'نُصمّم أنظمة الري');
   const heroTitleAccent = s('hero_title_accent', 'لأرضٍ أكثر إنتاجاً');
   const heroSubtitle = s('hero_subtitle', 'حلول متكاملة من الاستشارة الهندسية وحتى التركيب والصيانة — نخدم المزارعين وشركات المقاولات الزراعية والموزعين بأنظمة ري حديثة ومنتجات معتمدة عالمياً.');
-  const whatsapp = s('whatsapp', '201028200048');
+  const whatsapp = s('whatsapp', '201111661177');
   const stats = [
     { k: 'سنوات الخبرة', v: s('stats_years', '+25') },
     { k: 'مشاريع منفذة', v: s('stats_projects', '+500') },

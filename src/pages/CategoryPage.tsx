@@ -43,22 +43,28 @@ const CategoryPage = () => {
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {filtered.map(product => (
                 <motion.div key={product.id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
-                  className="rounded-2xl border border-border bg-card overflow-hidden shadow-card hover:shadow-card-hover hover:-translate-y-1 transition-all">
-                  <div className="h-48 gradient-hero flex items-center justify-center overflow-hidden">
-                    {product.image_url ? <img src={product.image_url} alt={product.title} className="h-full w-full object-cover" /> :
-                      <p className="text-lg font-bold text-muted-foreground/30">{product.title}</p>}
+                  className="group rounded-2xl border border-border bg-card overflow-hidden shadow-card hover:shadow-card-hover hover:-translate-y-1 transition-all duration-500 flex flex-col h-full">
+                  <div className="relative h-52 w-full overflow-hidden bg-gradient-to-tr from-accent/50 via-card to-accent/30 flex items-center justify-center p-4">
+                    {product.image_url ? (
+                      <>
+                        <img src={product.image_url} alt="" aria-hidden="true" className="absolute inset-0 h-full w-full object-cover opacity-20 blur-xl scale-125" />
+                        <img src={product.image_url} alt={product.title} className="relative z-10 max-h-full max-w-full object-contain drop-shadow-md transition-transform duration-500 group-hover:scale-105" />
+                      </>
+                    ) : (
+                      <p className="text-lg font-bold text-muted-foreground/30">{product.title}</p>
+                    )}
                   </div>
-                  <div className="p-5">
-                    <h3 className="mb-2 text-lg font-bold text-foreground">{product.title}</h3>
-                    <p className="mb-4 text-sm text-muted-foreground line-clamp-2">{product.description}</p>
-                    <div className="flex flex-wrap gap-2">
+                  <div className="p-5 flex flex-col flex-1">
+                    <h3 className="mb-2 text-base font-black text-foreground group-hover:text-primary transition-colors line-clamp-1">{product.title}</h3>
+                    <p className="mb-4 text-xs text-muted-foreground line-clamp-2">{product.description}</p>
+                    <div className="mt-auto flex flex-wrap gap-2 pt-2 border-t border-border/50">
                       <a href={getWhatsAppLink('201111661177', product.title)} target="_blank" rel="noopener noreferrer"
-                        className="flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-xs font-medium text-primary-foreground hover:scale-105 transition-transform">
-                        <MessageCircle className="h-3.5 w-3.5" />استفسر واتساب
+                        className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary px-3 py-2.5 text-xs font-bold text-primary-foreground shadow-button hover:scale-[1.02] transition-transform">
+                        <MessageCircle className="h-3.5 w-3.5" />واتساب
                       </a>
                       <button onClick={() => setModalProduct(product)}
-                        className="flex items-center gap-1.5 rounded-lg border border-border px-3 py-2 text-xs font-medium text-foreground hover:bg-accent transition-colors">
-                        <Eye className="h-3.5 w-3.5" />تفاصيل
+                        className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-border px-3.5 py-2.5 text-xs font-bold text-foreground hover:bg-accent transition-colors">
+                        <Eye className="h-3.5 w-3.5" />معاينة
                       </button>
                     </div>
                   </div>

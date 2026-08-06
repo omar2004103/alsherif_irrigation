@@ -60,8 +60,8 @@ export interface SiteSettings {
 
 export const siteSettings: SiteSettings = {
   phone1: '01111661177',
-  phone2: '01122811500',
-  admin_phone: '01028200048',
+  phone2: '01008028048',
+  admin_phone: '01111661177',
   whatsapp: '201111661177',
   address: 'مصر',
   hours: 'السبت - الخميس: 9 صباحاً - 6 مساءً',

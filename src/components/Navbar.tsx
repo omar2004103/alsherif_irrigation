@@ -25,8 +25,8 @@ const Navbar = () => {
   const { s } = useSiteSettings();
   const logoUrl = s('logo_url') || logoAsset.url || '/logo.png';
   const phone1 = s('phone1', '01111661177');
-  const phone2 = s('phone2', '01122811500');
-  const whatsapp = s('whatsapp', '201028200048');
+  const phone2 = s('phone2', '01008028048');
+  const whatsapp = s('whatsapp', '201111661177');
   const hours = s('hours', 'السبت - الخميس · 9ص - 6م');
   const nameAr = s('company_name_ar', 'آل شريف لنظم الري الحديث');
 

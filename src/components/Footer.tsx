@@ -19,10 +19,10 @@ const Footer = () => {
   const tagline = s('company_tagline', 'لنظم الري الحديث');
   const about = s('footer_about', 'شركة هندسية متخصصة في تصميم وتوريد وتركيب أنظمة الري الحديث للمزارع والمشاريع الزراعية الكبرى.');
   const phone1 = s('phone1', '01111661177');
-  const phone1Label = s('phone1_label', 'م. عادل شريف — المدير العام');
-  const phone2 = s('phone2', '01122811500');
-  const phone2Label = s('phone2_label', 'م. إيهاب — قسم المبيعات');
-  const whatsapp = s('whatsapp', '201028200048');
+  const phone1Label = s('phone1_label', 'م. عادل الشريف — مدير الشركة');
+  const phone2 = s('phone2', '01008028048');
+  const phone2Label = s('phone2_label', 'م. عادل الشريف — مدير الشركة');
+  const whatsapp = s('whatsapp', '201111661177');
   const address = s('address', 'الشعراوي، قطاع غرب النوبارية، مركز حوش عيسى، محافظة البحيرة، مصر');
   const postal = s('postal_code', '5820220');
   const plus = s('plus_code', 'P726+RV2');

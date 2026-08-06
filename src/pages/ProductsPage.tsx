@@ -49,59 +49,86 @@ function ProductCard({ product, categoryName, onPreview, onAddQuote }: {
       transition={{ duration: 0.35 }}
       className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-card transition-all duration-500 hover:shadow-card-hover hover:-translate-y-1"
     >
-      <div className="relative aspect-[4/3] overflow-hidden bg-accent/30">
+      {/* High Quality Image Container with Blurred Backdrop fallback */}
+      <div className="relative aspect-[4/3] w-full overflow-hidden bg-gradient-to-tr from-accent/50 via-card to-accent/30 flex items-center justify-center p-4">
         {product.image_url ? (
-          <img
-            src={product.image_url}
-            alt={product.title}
-            loading="lazy"
-            className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
-          />
+          <>
+            <img
+              src={product.image_url}
+              alt=""
+              aria-hidden="true"
+              className="absolute inset-0 h-full w-full object-cover opacity-20 blur-xl scale-125"
+            />
+            <img
+              src={product.image_url}
+              alt={product.title}
+              loading="lazy"
+              className="relative z-10 max-h-full max-w-full object-contain drop-shadow-md transition-transform duration-500 group-hover:scale-105"
+            />
+          </>
         ) : (
           <div className="flex h-full w-full items-center justify-center text-muted-foreground/30">
             <Package className="h-14 w-14" strokeWidth={1.2} />
           </div>
         )}
-        <div className="absolute top-3 right-3 flex flex-col gap-1.5">
+        
+        <div className="absolute top-3 right-3 z-20 flex flex-col gap-1.5 items-end">
           <AvailabilityBadge value={product.availability || 'available'} />
           {product.featured && (
-            <span className="rounded-full bg-[hsl(32,95%,44%)] px-2.5 py-1 text-[11px] font-bold text-white">مميز</span>
+            <span className="rounded-full bg-[hsl(32,95%,44%)] px-2.5 py-1 text-[11px] font-bold text-white shadow-md">
+              ★ مميز
+            </span>
           )}
         </div>
+
         <button
           onClick={() => onPreview(product)}
-          className="absolute inset-x-3 bottom-3 flex items-center justify-center gap-2 rounded-lg bg-card/95 backdrop-blur px-4 py-2 text-xs font-bold text-foreground opacity-0 translate-y-2 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0"
+          className="absolute inset-x-3 bottom-3 z-20 flex items-center justify-center gap-2 rounded-xl bg-card/95 backdrop-blur-md border border-border/60 px-4 py-2 text-xs font-bold text-foreground opacity-0 translate-y-2 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0 shadow-md"
         >
-          <Eye className="h-3.5 w-3.5" /> معاينة سريعة
+          <Eye className="h-3.5 w-3.5 text-primary" /> معاينة سريعة
         </button>
       </div>
 
       <div className="flex flex-1 flex-col p-5">
         <div className="mb-2 flex items-center justify-between gap-2 text-[11px]">
           {categoryName && (
-            <span className="font-semibold uppercase tracking-wider text-secondary">{categoryName}</span>
+            <span className="font-bold uppercase tracking-wider text-secondary bg-secondary/10 px-2.5 py-0.5 rounded-md">
+              {categoryName}
+            </span>
           )}
           {product.product_code && (
-            <span className="text-muted-foreground" dir="ltr">#{product.product_code}</span>
+            <span className="text-muted-foreground font-mono text-[10px]" dir="ltr">#{product.product_code}</span>
           )}
         </div>
-        <h3 className="mb-1.5 text-base font-bold text-foreground leading-snug line-clamp-2 group-hover:text-primary transition-colors">
-          {product.title}
-        </h3>
-        {product.brand && <p className="mb-2 text-xs text-muted-foreground">الماركة: <span className="font-semibold text-foreground">{product.brand}</span></p>}
-        {product.description && (
-          <p className="mb-4 text-sm text-muted-foreground leading-relaxed line-clamp-2">{product.description}</p>
+
+        <Link to={`/product/${product.slug}`}>
+          <h3 className="mb-1.5 text-base font-black text-foreground leading-snug line-clamp-2 group-hover:text-primary transition-colors">
+            {product.title}
+          </h3>
+        </Link>
+
+        {product.brand && (
+          <p className="mb-2 text-xs text-muted-foreground">
+            الماركة: <span className="font-bold text-foreground">{product.brand}</span>
+          </p>
         )}
-        <div className="mt-auto flex gap-2">
+
+        {product.description && (
+          <p className="mb-4 text-xs text-muted-foreground leading-relaxed line-clamp-2">
+            {product.description}
+          </p>
+        )}
+
+        <div className="mt-auto flex gap-2 pt-2 border-t border-border/50">
           <Link
             to={`/product/${product.slug}`}
-            className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg border border-border bg-background px-3 py-2.5 text-xs font-bold text-foreground transition-colors hover:bg-accent hover:text-primary"
+            className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-border bg-background px-3 py-2.5 text-xs font-bold text-foreground transition-colors hover:bg-accent hover:text-primary"
           >
             التفاصيل <ChevronLeft className="h-3.5 w-3.5" />
           </Link>
           <button
             onClick={() => onAddQuote(product)}
-            className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg bg-primary px-3 py-2.5 text-xs font-bold text-primary-foreground shadow-button transition-all hover:-translate-y-0.5"
+            className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary px-3 py-2.5 text-xs font-bold text-primary-foreground shadow-button transition-all hover:-translate-y-0.5"
           >
             <FileText className="h-3.5 w-3.5" /> عرض سعر
           </button>

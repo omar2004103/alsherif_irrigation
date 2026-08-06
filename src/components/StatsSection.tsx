@@ -4,7 +4,7 @@ import { Award, Package, Users, Building2 } from 'lucide-react';
 
 const stats = [
   { icon: Award, value: 25, suffix: '+', label: 'سنة من الخبرة', hint: 'في هندسة الري' },
-  { icon: Package, value: 320, suffix: '+', label: 'منتج', hint: 'من ماركات عالمية' },
+  { icon: Package, noNumber: true, title: 'أفضل العلامات التجارية', hint: 'جودة مضمونة' },
   { icon: Users, value: 2400, suffix: '+', label: 'عميل', hint: 'يثقون بنا' },
   { icon: Building2, value: 500, suffix: '+', label: 'مشروع منفذ', hint: 'داخل مصر' },
 ];
@@ -40,24 +40,36 @@ const StatsSection = () => {
           <div className="grid grid-cols-2 lg:grid-cols-4 divide-y sm:divide-y-0 divide-border sm:divide-x sm:divide-x-reverse">
             {stats.map((s, i) => (
               <motion.div
-                key={s.label}
+                key={s.noNumber ? s.title : s.label}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.08, duration: 0.4 }}
-                className="group relative p-8 lg:p-10 transition-colors hover:bg-accent/40"
+                className="group relative p-8 lg:p-10 transition-colors hover:bg-accent/40 flex flex-col justify-between"
               >
                 <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-accent text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
                   <s.icon className="h-5 w-5" strokeWidth={1.75} />
                 </div>
-                <div className="flex items-baseline gap-1">
-                  <span className="font-heading text-4xl lg:text-5xl font-extrabold text-primary tabular-nums">
-                    <Counter to={s.value} />
-                  </span>
-                  <span className="font-heading text-3xl font-bold text-secondary">{s.suffix}</span>
-                </div>
-                <p className="mt-2 text-sm font-bold text-foreground">{s.label}</p>
-                <p className="text-xs text-muted-foreground">{s.hint}</p>
+
+                {s.noNumber ? (
+                  <div className="mt-auto">
+                    <h3 className="font-heading text-xl lg:text-2xl font-black text-primary leading-tight">
+                      {s.title}
+                    </h3>
+                    <p className="mt-2 text-xs font-semibold text-muted-foreground">{s.hint}</p>
+                  </div>
+                ) : (
+                  <div>
+                    <div className="flex items-baseline gap-1">
+                      <span className="font-heading text-4xl lg:text-5xl font-extrabold text-primary tabular-nums">
+                        <Counter to={s.value!} />
+                      </span>
+                      <span className="font-heading text-3xl font-bold text-secondary">{s.suffix}</span>
+                    </div>
+                    <p className="mt-2 text-sm font-bold text-foreground">{s.label}</p>
+                    <p className="text-xs text-muted-foreground">{s.hint}</p>
+                  </div>
+                )}
               </motion.div>
             ))}
           </div>

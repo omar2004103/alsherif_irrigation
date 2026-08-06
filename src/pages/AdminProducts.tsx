@@ -216,16 +216,16 @@ const AdminProducts = () => {
     }
   };
 
-  const handleDrawingUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handlePdfUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
     setUploading(true);
     try {
       const file = e.target.files[0];
-      const { url } = await uploadFileToSupabase(file, 'drawings');
-      setDrawingUrl(url);
-      toast({ title: 'تم رفع الرسم الفني بنجاح 📐' });
+      const { url } = await uploadFileToSupabase(file, 'catalogs');
+      setPdfUrl(url);
+      toast({ title: 'تم رفع الكتالوج بنجاح 📄' });
     } catch (err: any) {
-      toast({ title: 'خطأ أثناء رفع الرسم الفني', description: err.message, variant: 'destructive' });
+      toast({ title: 'خطأ أثناء رفع الكتالوج', description: err.message, variant: 'destructive' });
     } finally {
       setUploading(false);
     }
@@ -528,8 +528,20 @@ const AdminProducts = () => {
                   </div>
 
                   <div>
-                    <label className="block font-bold text-foreground mb-1">رابط كتالوج PDF للمنتج</label>
-                    <input type="text" value={pdfUrl} onChange={e => setPdfUrl(e.target.value)} placeholder="https://example.com/brochure.pdf" className="w-full rounded-xl border border-input bg-background p-2.5 text-xs outline-none" dir="ltr" />
+                    <label className="block font-bold text-foreground mb-1">كتالوج المنتج (PDF أو صورة من الجهاز)</label>
+                    <div className="flex items-center gap-2">
+                      <input type="file" accept=".pdf,image/*" onChange={handlePdfUpload} className="hidden" id="pdf-file-input" />
+                      <label htmlFor="pdf-file-input" className="cursor-pointer rounded-xl bg-emerald-600 text-white px-3 py-2 font-bold text-xs hover:bg-emerald-700 shrink-0 shadow-sm flex items-center gap-1.5">
+                        <FileDown className="h-4 w-4" /> {uploading ? 'جاري الرفع...' : 'رفع من الجهاز (PDF/صورة)'}
+                      </label>
+                      <input type="text" value={pdfUrl} onChange={e => setPdfUrl(e.target.value)} placeholder="أو ضع رابط مباشر للكتالوج..." className="w-full rounded-xl border border-input bg-background p-2 text-xs outline-none" dir="ltr" />
+                    </div>
+                    {pdfUrl && (
+                      <div className="mt-2 p-2 rounded-xl border border-emerald-500/30 bg-emerald-500/10 flex items-center justify-between text-xs text-emerald-700 font-bold">
+                        <span className="truncate max-w-[220px]" dir="ltr">{pdfUrl}</span>
+                        <a href={pdfUrl} target="_blank" rel="noreferrer" className="text-primary hover:underline">معاينة ↗</a>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -587,17 +599,26 @@ const AdminProducts = () => {
                   </div>
 
                   <div>
-                    <label className="block font-bold text-foreground mb-1">الماركة *</label>
-                    <select value={brandName} onChange={e => setBrandName(e.target.value)} className="w-full rounded-xl border border-input bg-background p-3 text-xs outline-none focus:border-primary font-bold text-primary">
-                      <option value="ERA">ERA</option>
-                      <option value="DKV">DKV</option>
-                      <option value="AZUD">AZUD</option>
-                      <option value="NETAFIM">NETAFIM</option>
-                      <option value="PLASSON">PLASSON</option>
-                      <option value="Rivulis">Rivulis</option>
-                      <option value="ASTORE">ASTORE</option>
-                      {brands?.map((b: any) => <option key={b.id} value={b.name}>{b.name}</option>)}
-                    </select>
+                    <label className="block font-bold text-foreground mb-1">الماركة * (اختر أو اكتب ماركة مخصصة)</label>
+                    <div className="space-y-1.5">
+                      <select value={brandName} onChange={e => setBrandName(e.target.value)} className="w-full rounded-xl border border-input bg-background p-2.5 text-xs outline-none focus:border-primary font-bold text-primary">
+                        <option value="ERA">ERA</option>
+                        <option value="DKV">DKV</option>
+                        <option value="AZUD">AZUD</option>
+                        <option value="NETAFIM">NETAFIM</option>
+                        <option value="PLASSON">PLASSON</option>
+                        <option value="Rivulis">Rivulis</option>
+                        <option value="ASTORE">ASTORE</option>
+                        {brands?.map((b: any) => <option key={b.id} value={b.name}>{b.name}</option>)}
+                      </select>
+                      <input
+                        type="text"
+                        value={brandName}
+                        onChange={e => setBrandName(e.target.value)}
+                        placeholder="أو اكتب اسم الماركة يدوياً هنا..."
+                        className="w-full rounded-xl border border-input bg-background p-2 text-xs outline-none focus:border-primary font-bold"
+                      />
+                    </div>
                   </div>
 
                   <div>

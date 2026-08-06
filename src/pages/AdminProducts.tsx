@@ -157,6 +157,7 @@ const AdminProducts = () => {
 
   // Open Form for Editing
   const handleEdit = (p: any) => {
+    if (!p) return;
     setEditingProduct(p);
     setTitle(p.title || '');
     setTitleEn(p.title_en || '');
@@ -180,7 +181,7 @@ const AdminProducts = () => {
     setTemperature(p.temperature || '0°C - 45°C');
     setOrigin(p.origin || 'تركيا');
     setWarranty(p.warranty || 'سنة واحدة');
-    setSelectedFeatures(Array.isArray(p.features) ? p.features.map((f: any) => typeof f === 'string' ? f : f.title) : []);
+    setSelectedFeatures(Array.isArray(p.features) ? p.features.map((f: any) => typeof f === 'string' ? f : (f?.title || '')) : []);
     setStockQuantity(p.stock_quantity ? String(p.stock_quantity) : '25');
     setMinStock(p.min_stock ? String(p.min_stock) : '5');
     setWarehouse(p.warehouse || 'المخزن الرئيسي');
@@ -253,53 +254,50 @@ const AdminProducts = () => {
 
   // Toggle Size selection
   const toggleSize = (sz: string) => {
-    setSelectedSizes(prev => prev.includes(sz) ? prev.filter(x => x !== sz) : [...prev, sz]);
+    setSelectedSizes(prev => Array.isArray(prev) ? (prev.includes(sz) ? prev.filter(x => x !== sz) : [...prev, sz]) : [sz]);
   };
 
   const addCustomSize = () => {
     if (!customSizeInput.trim()) return;
-    if (!selectedSizes.includes(customSizeInput.trim())) {
-      setSelectedSizes(prev => [...prev, customSizeInput.trim()]);
-    }
+    const val = customSizeInput.trim();
+    setSelectedSizes(prev => Array.isArray(prev) ? (prev.includes(val) ? prev : [...prev, val]) : [val]);
     setCustomSizeInput('');
   };
 
   // Toggle Pressure selection
   const togglePressure = (pr: string) => {
-    setSelectedPressures(prev => prev.includes(pr) ? prev.filter(x => x !== pr) : [...prev, pr]);
+    setSelectedPressures(prev => Array.isArray(prev) ? (prev.includes(pr) ? prev.filter(x => x !== pr) : [...prev, pr]) : [pr]);
   };
 
   const addCustomPressure = () => {
     if (!customPressureInput.trim()) return;
-    if (!selectedPressures.includes(customPressureInput.trim())) {
-      setSelectedPressures(prev => [...prev, customPressureInput.trim()]);
-    }
+    const val = customPressureInput.trim();
+    setSelectedPressures(prev => Array.isArray(prev) ? (prev.includes(val) ? prev : [...prev, val]) : [val]);
     setCustomPressureInput('');
   };
 
   // Matrix Row Handlers
   const addMatrixRow = () => {
-    setSizesMatrix(prev => [...prev, { size: '200', outer: '200.00', inner: '160.00', wall: '16.00', radius: '250', pressure: '16 بار' }]);
+    setSizesMatrix(prev => Array.isArray(prev) ? [...prev, { size: '200', outer: '200.00', inner: '160.00', wall: '16.00', radius: '250', pressure: '16 بار' }] : DEFAULT_MATRIX);
   };
 
   const updateMatrixRow = (idx: number, key: string, val: string) => {
-    setSizesMatrix(prev => prev.map((row, i) => i === idx ? { ...row, [key]: val } : row));
+    setSizesMatrix(prev => Array.isArray(prev) ? prev.map((row, i) => i === idx ? { ...row, [key]: val } : row) : DEFAULT_MATRIX);
   };
 
   const removeMatrixRow = (idx: number) => {
-    setSizesMatrix(prev => prev.filter((_, i) => i !== idx));
+    setSizesMatrix(prev => Array.isArray(prev) ? prev.filter((_, i) => i !== idx) : []);
   };
 
   // Toggle Feature selection
   const toggleFeature = (feat: string) => {
-    setSelectedFeatures(prev => prev.includes(feat) ? prev.filter(x => x !== feat) : [...prev, feat]);
+    setSelectedFeatures(prev => Array.isArray(prev) ? (prev.includes(feat) ? prev.filter(x => x !== feat) : [...prev, feat]) : [feat]);
   };
 
   const addCustomFeature = () => {
     if (!customFeatureInput.trim()) return;
-    if (!selectedFeatures.includes(customFeatureInput.trim())) {
-      setSelectedFeatures(prev => [...prev, customFeatureInput.trim()]);
-    }
+    const val = customFeatureInput.trim();
+    setSelectedFeatures(prev => Array.isArray(prev) ? (prev.includes(val) ? prev : [...prev, val]) : [val]);
     setCustomFeatureInput('');
   };
 
@@ -336,7 +334,7 @@ const AdminProducts = () => {
       temperature: temperature,
       origin: origin,
       warranty: warranty,
-      features: selectedFeatures.map(f => ({ title: f })),
+      features: (selectedFeatures || []).map(f => ({ title: f })),
       stock_quantity: parseInt(stockQuantity, 10) || 0,
       min_stock: parseInt(minStock, 10) || 5,
       warehouse: warehouse,
@@ -430,12 +428,18 @@ const AdminProducts = () => {
     }
   };
 
-  const filteredProducts = products?.filter((p: any) => {
+  const filteredProducts = (products || []).filter((p: any) => {
     const matchSearch = p.title?.toLowerCase().includes(search.toLowerCase()) || p.description?.toLowerCase().includes(search.toLowerCase());
     const matchCat = !selectedCat || p.category_id === selectedCat;
     const matchBrand = !selectedBrand || p.brand === selectedBrand;
     return matchSearch && matchCat && matchBrand;
-  }) || [];
+  });
+
+  const safeGalleryImages = Array.isArray(galleryImages) ? galleryImages : [];
+  const safeSelectedSizes = Array.isArray(selectedSizes) ? selectedSizes : [];
+  const safeSelectedPressures = Array.isArray(selectedPressures) ? selectedPressures : [];
+  const safeSizesMatrix = Array.isArray(sizesMatrix) ? sizesMatrix : DEFAULT_MATRIX;
+  const safeSelectedFeatures = Array.isArray(selectedFeatures) ? selectedFeatures : [];
 
   return (
     <div className="space-y-6 text-right" dir="rtl">
@@ -459,22 +463,25 @@ const AdminProducts = () => {
 
             <div className="flex flex-wrap items-center gap-2">
               <button
+                type="button"
                 onClick={() => handleSave(false)}
-                className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white shadow-md hover:bg-emerald-700 transition-all"
+                className="inline-flex items-center gap-2 rounded-xl bg-emerald-600 px-5 py-2.5 text-xs font-bold text-white shadow-md hover:bg-emerald-700 transition-all cursor-pointer"
               >
                 <Save className="h-4 w-4" /> حفظ المنتج
               </button>
 
               <button
+                type="button"
                 onClick={() => handleSave(true)}
-                className="inline-flex items-center gap-2 rounded-xl border border-emerald-600 text-emerald-600 bg-emerald-500/10 px-4 py-2.5 text-xs font-bold hover:bg-emerald-600 hover:text-white transition-all"
+                className="inline-flex items-center gap-2 rounded-xl border border-emerald-600 text-emerald-600 bg-emerald-500/10 px-4 py-2.5 text-xs font-bold hover:bg-emerald-600 hover:text-white transition-all cursor-pointer"
               >
                 <Plus className="h-4 w-4" /> حفظ وإضافة جديد
               </button>
 
               <button
+                type="button"
                 onClick={() => { setShowForm(false); resetForm(); }}
-                className="inline-flex items-center gap-2 rounded-xl border border-rose-500/30 text-rose-600 bg-rose-50 px-4 py-2.5 text-xs font-bold hover:bg-rose-600 hover:text-white transition-all"
+                className="inline-flex items-center gap-2 rounded-xl border border-rose-500/30 text-rose-600 bg-rose-50 px-4 py-2.5 text-xs font-bold hover:bg-rose-600 hover:text-white transition-all cursor-pointer"
               >
                 <X className="h-4 w-4" /> إلغاء
               </button>
@@ -506,12 +513,12 @@ const AdminProducts = () => {
 
                 {/* Image Thumbnails Grid */}
                 <div className="grid grid-cols-4 gap-2.5">
-                  {galleryImages.map((img, i) => (
+                  {safeGalleryImages.map((img, i) => (
                     <div key={i} className={`group relative aspect-square rounded-xl border overflow-hidden bg-card p-1 ${imageUrl === img ? 'border-emerald-500 ring-2 ring-emerald-500/20' : 'border-border'}`}>
                       <img src={img} alt="" className="h-full w-full object-contain" />
                       <button
                         type="button"
-                        onClick={() => setGalleryImages(galleryImages.filter((_, idx) => idx !== i))}
+                        onClick={() => setGalleryImages(safeGalleryImages.filter((_, idx) => idx !== i))}
                         className="absolute top-1 left-1 rounded-full bg-rose-600 p-1 text-white opacity-0 group-hover:opacity-100 transition-opacity"
                       >
                         <X className="h-3 w-3" />
@@ -544,7 +551,7 @@ const AdminProducts = () => {
                   <div>
                     <label className="block font-bold text-foreground mb-1">صورة الرسم الفني الهيكلي (Technical Diagram)</label>
                     <div className="flex items-center gap-2">
-                      <input type="file" accept="image/*" onChange={handleDrawingUpload} className="hidden" id="drawing-img-input" />
+                      <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" id="drawing-img-input" />
                       <label htmlFor="drawing-img-input" className="cursor-pointer rounded-xl bg-accent border border-border px-3 py-2 font-bold text-xs hover:bg-primary hover:text-white shrink-0">
                         {uploading ? 'جاري الرفع...' : 'رفع رسم فني'}
                       </label>
@@ -689,7 +696,7 @@ const AdminProducts = () => {
                   <label className="block text-xs font-bold text-foreground">المقاسات المتاحة (* انقر للتفعيل):</label>
                   <div className="flex flex-wrap gap-2">
                     {COMMON_SIZES.map(sz => {
-                      const isSelected = selectedSizes.includes(sz);
+                      const isSelected = safeSelectedSizes.includes(sz);
                       return (
                         <button
                           key={sz}
@@ -724,7 +731,7 @@ const AdminProducts = () => {
                   <label className="block text-xs font-bold text-foreground">خيارات الضغط المتاحة (* انقر للتفعيل):</label>
                   <div className="flex flex-wrap gap-2">
                     {COMMON_PRESSURES.map(pr => {
-                      const isSelected = selectedPressures.includes(pr);
+                      const isSelected = safeSelectedPressures.includes(pr);
                       return (
                         <button
                           key={pr}
@@ -768,14 +775,14 @@ const AdminProducts = () => {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
-                      {sizesMatrix.map((row, idx) => (
+                      {safeSizesMatrix.map((row, idx) => (
                         <tr key={idx}>
-                          <td className="p-1"><input type="text" value={row.size} onChange={e => updateMatrixRow(idx, 'size', e.target.value)} className="w-16 rounded border bg-background p-1 text-center font-bold" /></td>
-                          <td className="p-1"><input type="text" value={row.outer} onChange={e => updateMatrixRow(idx, 'outer', e.target.value)} className="w-20 rounded border bg-background p-1 text-center" /></td>
-                          <td className="p-1"><input type="text" value={row.inner} onChange={e => updateMatrixRow(idx, 'inner', e.target.value)} className="w-20 rounded border bg-background p-1 text-center" /></td>
-                          <td className="p-1"><input type="text" value={row.wall} onChange={e => updateMatrixRow(idx, 'wall', e.target.value)} className="w-16 rounded border bg-background p-1 text-center" /></td>
-                          <td className="p-1"><input type="text" value={row.radius} onChange={e => updateMatrixRow(idx, 'radius', e.target.value)} className="w-16 rounded border bg-background p-1 text-center" /></td>
-                          <td className="p-1"><input type="text" value={row.pressure} onChange={e => updateMatrixRow(idx, 'pressure', e.target.value)} className="w-20 rounded border bg-background p-1 text-center" /></td>
+                          <td className="p-1"><input type="text" value={row.size || ''} onChange={e => updateMatrixRow(idx, 'size', e.target.value)} className="w-16 rounded border bg-background p-1 text-center font-bold" /></td>
+                          <td className="p-1"><input type="text" value={row.outer || ''} onChange={e => updateMatrixRow(idx, 'outer', e.target.value)} className="w-20 rounded border bg-background p-1 text-center" /></td>
+                          <td className="p-1"><input type="text" value={row.inner || ''} onChange={e => updateMatrixRow(idx, 'inner', e.target.value)} className="w-20 rounded border bg-background p-1 text-center" /></td>
+                          <td className="p-1"><input type="text" value={row.wall || ''} onChange={e => updateMatrixRow(idx, 'wall', e.target.value)} className="w-16 rounded border bg-background p-1 text-center" /></td>
+                          <td className="p-1"><input type="text" value={row.radius || ''} onChange={e => updateMatrixRow(idx, 'radius', e.target.value)} className="w-16 rounded border bg-background p-1 text-center" /></td>
+                          <td className="p-1"><input type="text" value={row.pressure || ''} onChange={e => updateMatrixRow(idx, 'pressure', e.target.value)} className="w-20 rounded border bg-background p-1 text-center" /></td>
                           <td className="p-1">
                             <button type="button" onClick={() => removeMatrixRow(idx)} className="rounded p-1 text-rose-600 hover:bg-rose-50">
                               <X className="h-4 w-4" />
@@ -796,7 +803,7 @@ const AdminProducts = () => {
                 
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs">
                   {COMMON_FEATURES.map(feat => {
-                    const isChecked = selectedFeatures.includes(feat);
+                    const isChecked = safeSelectedFeatures.includes(feat);
                     return (
                       <label key={feat} className={`flex items-center gap-2 p-2.5 rounded-xl border cursor-pointer transition-all ${isChecked ? 'border-purple-500 bg-purple-500/10 font-bold text-purple-700' : 'border-border bg-accent/20 text-muted-foreground'}`}>
                         <input type="checkbox" checked={isChecked} onChange={() => toggleFeature(feat)} className="rounded text-purple-600" />
@@ -870,6 +877,7 @@ const AdminProducts = () => {
             </div>
 
             <button
+              type="button"
               onClick={handleOpenAddForm}
               className="flex items-center gap-2 rounded-xl bg-emerald-600 px-6 py-3 text-xs font-black text-white shadow-lg hover:bg-emerald-700 hover:scale-[1.02] transition-all cursor-pointer"
             >
@@ -984,10 +992,10 @@ const AdminProducts = () => {
 
                           <td className="p-3.5 text-center">
                             <div className="flex items-center justify-center gap-1">
-                              <button onClick={() => handleEdit(p)} className="rounded-lg p-2 text-muted-foreground hover:bg-accent hover:text-foreground" title="تعديل">
+                              <button type="button" onClick={() => handleEdit(p)} className="rounded-lg p-2 text-muted-foreground hover:bg-accent hover:text-foreground cursor-pointer" title="تعديل">
                                 <Edit className="h-4 w-4" />
                               </button>
-                              <button onClick={() => handleDelete(p.id)} className="rounded-lg p-2 text-rose-600 hover:bg-rose-50" title="حذف">
+                              <button type="button" onClick={() => handleDelete(p.id)} className="rounded-lg p-2 text-rose-600 hover:bg-rose-50 cursor-pointer" title="حذف">
                                 <Trash2 className="h-4 w-4" />
                               </button>
                             </div>

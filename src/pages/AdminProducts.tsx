@@ -816,7 +816,7 @@ const AdminProducts = () => {
                     <th className="p-3.5">الصورة والمنتج</th>
                     <th className="p-3.5">القسم والماركة</th>
                     <th className="p-3.5">المقاسات المتاحة</th>
-                    <th className="p-3.5">السعر والتوفر</th>
+                    <th className="p-3.5">حالة التوفر</th>
                     <th className="p-3.5 text-center">الإجراءات</th>
                   </tr>
                 </thead>
@@ -866,11 +866,10 @@ const AdminProducts = () => {
                           </td>
 
                           <td className="p-3.5">
-                            <div className="font-bold text-foreground">{p.sale_price ? `${p.sale_price} ج.م` : 'عند الطلب'}</div>
-                            <span className={`inline-block rounded-full px-2 py-0.5 text-[9px] font-bold mt-0.5 ${
+                            <span className={`inline-block rounded-full px-2.5 py-1 text-[10px] font-bold ${
                               p.availability === 'available' || !p.availability ? 'bg-emerald-500/10 text-emerald-600' : 'bg-rose-500/10 text-rose-600'
                             }`}>
-                              {p.availability === 'available' || !p.availability ? 'متوفر' : 'غير متوفر'}
+                              {p.availability === 'available' || !p.availability ? '• متوفر في المخزون' : '• متوفر عند الطلب'}
                             </span>
                           </td>
 

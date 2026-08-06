@@ -3,7 +3,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { 
   Plus, Edit, Trash2, Search, Star, Upload, X, Image as ImageIcon, 
   Check, Save, ArrowRight, CheckSquare, Layers, Tag, ShieldCheck,
-  Building2, DollarSign, Package, Globe, Eye, Sparkles, Sliders
+  Building2, DollarSign, Package, Globe, Eye, Sparkles, Sliders, FileText, FileDown
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useProducts, useCategories, useBrands } from '@/hooks/useSupabaseData';
@@ -15,9 +15,22 @@ const COMMON_SIZES = [
   '1/2 بوصة', '3/4 بوصة', '1 بوصة', '1.5 بوصة', '2 بوصة', '3 بوصة', '4 بوصة (DN100)', '6 بوصة'
 ];
 
+const COMMON_PRESSURES = ['6 بار', '10 بار', '16 بار', '20 بار', '25 بار'];
+
 const COMMON_FEATURES = [
   'مقاوم للصدأ', 'مقاوم للضغط العالي', 'تركيب سهل وسريع', 'مناسب لمياه الشرب',
   'عمر افتراضي طويل', 'سطح أملس لتقليل الاحتكاك', 'تحمل كيميائي ممتاز'
+];
+
+const DEFAULT_MATRIX = [
+  { size: '20', outer: '20.30', inner: '16.20', wall: '2.05', radius: '26', pressure: '16 بار' },
+  { size: '25', outer: '25.30', inner: '20.20', wall: '2.55', radius: '33', pressure: '16 بار' },
+  { size: '32', outer: '32.30', inner: '26.20', wall: '3.05', radius: '42', pressure: '16 بار' },
+  { size: '40', outer: '40.30', inner: '32.30', wall: '3.55', radius: '52', pressure: '16 بار' },
+  { size: '50', outer: '50.30', inner: '40.20', wall: '4.55', radius: '65', pressure: '16 بار' },
+  { size: '63', outer: '63.30', inner: '50.20', wall: '5.65', radius: '82', pressure: '16 بار' },
+  { size: '110', outer: '110.40', inner: '87.40', wall: '10.00', radius: '143', pressure: '16 بار' },
+  { size: '160', outer: '160.50', inner: '128.40', wall: '14.00', radius: '205', pressure: '16 بار' },
 ];
 
 const AdminProducts = () => {
@@ -32,7 +45,7 @@ const AdminProducts = () => {
   const [selectedCat, setSelectedCat] = useState('');
   const [selectedBrand, setSelectedBrand] = useState('');
 
-  // Form Mode
+  // Form View State
   const [showForm, setShowForm] = useState(false);
   const [editingProduct, setEditingProduct] = useState<any>(null);
   const [uploading, setUploading] = useState(false);
@@ -47,19 +60,27 @@ const AdminProducts = () => {
   const [productCode, setProductCode] = useState('');
   const [barcode, setBarcode] = useState('');
 
-  // Description
+  // Descriptions
   const [description, setDescription] = useState('');
   const [fullDescription, setFullDescription] = useState('');
 
-  // Images
+  // Images & Drawing
   const [imageUrl, setImageUrl] = useState('');
+  const [drawingUrl, setDrawingUrl] = useState('');
+  const [pdfUrl, setPdfUrl] = useState('');
   const [galleryImages, setGalleryImages] = useState<string[]>([]);
 
-  // Specs & Sizes
-  const [selectedSizes, setSelectedSizes] = useState<string[]>(['20 مم', '25 مم', '32 مم', '110 مم']);
+  // Specs, Sizes & Pressure
+  const [selectedSizes, setSelectedSizes] = useState<string[]>(['20 مم', '25 مم', '32 مم', '110 مم', '160 مم']);
+  const [selectedPressures, setSelectedPressures] = useState<string[]>(['6 بار', '10 بار', '16 بار']);
   const [customSizeInput, setCustomSizeInput] = useState('');
+  const [customPressureInput, setCustomPressureInput] = useState('');
+  
+  // Specs Matrix Table
+  const [sizesMatrix, setSizesMatrix] = useState<Array<{ size: string; outer: string; inner: string; wall: string; radius: string; pressure: string }>>(DEFAULT_MATRIX);
+  
+  // Technical Specs fields
   const [material, setMaterial] = useState('PVC');
-  const [pressure, setPressure] = useState('16 بار');
   const [connectionType, setConnectionType] = useState('ملحوم / لاصق');
   const [sealMaterial, setSealMaterial] = useState('EPDM');
   const [temperature, setTemperature] = useState('0°C - 45°C');
@@ -72,11 +93,7 @@ const AdminProducts = () => {
   ]);
   const [customFeatureInput, setCustomFeatureInput] = useState('');
 
-  // Pricing & Stock
-  const [costPrice, setCostPrice] = useState('1250.00');
-  const [salePrice, setSalePrice] = useState('1750.00');
-  const [wholesalePrice, setWholesalePrice] = useState('1600.00');
-  const [vatPercent, setVatPercent] = useState('14');
+  // Inventory & Status
   const [stockQuantity, setStockQuantity] = useState('25');
   const [minStock, setMinStock] = useState('5');
   const [warehouse, setWarehouse] = useState('المخزن الرئيسي');
@@ -104,20 +121,19 @@ const AdminProducts = () => {
     setDescription('');
     setFullDescription('');
     setImageUrl('');
+    setDrawingUrl('');
+    setPdfUrl('');
     setGalleryImages([]);
-    setSelectedSizes(['20 مم', '25 مم', '32 مم', '110 مم']);
+    setSelectedSizes(['20 مم', '25 مم', '32 مم', '110 مم', '160 مم']);
+    setSelectedPressures(['6 بار', '10 بار', '16 بار']);
+    setSizesMatrix(DEFAULT_MATRIX);
     setMaterial('PVC');
-    setPressure('16 بار');
     setConnectionType('ملحوم / لاصق');
     setSealMaterial('EPDM');
     setTemperature('0°C - 45°C');
     setOrigin('تركيا');
     setWarranty('سنة واحدة');
     setSelectedFeatures(['مقاوم للصدأ', 'مقاوم للضغط العالي', 'تركيب سهل وسريع', 'عمر افتراضي طويل']);
-    setCostPrice('1250.00');
-    setSalePrice('1750.00');
-    setWholesalePrice('1600.00');
-    setVatPercent('14');
     setStockQuantity('25');
     setMinStock('5');
     setWarehouse('المخزن الرئيسي');
@@ -132,6 +148,13 @@ const AdminProducts = () => {
     setEditingProduct(null);
   };
 
+  // Open Form for Adding New Product
+  const handleOpenAddForm = () => {
+    resetForm();
+    setShowForm(true);
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+  };
+
   // Open Form for Editing
   const handleEdit = (p: any) => {
     setEditingProduct(p);
@@ -139,26 +162,25 @@ const AdminProducts = () => {
     setTitleEn(p.title_en || '');
     setCategoryId(p.category_id || p.categoryId || '');
     setSubCategory(p.subcategory || '');
-    setBrandName(p.brand || 'DKV');
+    setBrandName(p.brand || 'ERA');
     setModelNumber(p.model_number || '');
     setProductCode(p.product_code || '');
     setBarcode(p.barcode || '');
     setDescription(p.description || '');
     setFullDescription(p.full_description || p.description || '');
     setImageUrl(p.image_url || '');
-    setSelectedSizes(Array.isArray(p.sizes) ? p.sizes : DEFAULT_SIZES_FALLBACK(p));
+    setDrawingUrl(p.drawing_url || '');
+    setPdfUrl(p.pdf_url || '');
+    setSelectedSizes(Array.isArray(p.sizes) ? p.sizes : ['20 مم', '25 مم', '32 مم', '110 مم', '160 مم']);
+    setSelectedPressures(Array.isArray(p.pressures) ? p.pressures : ['6 بار', '10 بار', '16 بار']);
+    setSizesMatrix(Array.isArray(p.sizes_matrix) && p.sizes_matrix.length > 0 ? p.sizes_matrix : DEFAULT_MATRIX);
     setMaterial(p.material || 'PVC');
-    setPressure(p.pressure || '16 بار');
     setConnectionType(p.connection_type || 'ملحوم / لاصق');
     setSealMaterial(p.seal_material || 'EPDM');
     setTemperature(p.temperature || '0°C - 45°C');
     setOrigin(p.origin || 'تركيا');
     setWarranty(p.warranty || 'سنة واحدة');
     setSelectedFeatures(Array.isArray(p.features) ? p.features.map((f: any) => typeof f === 'string' ? f : f.title) : []);
-    setCostPrice(p.cost_price ? String(p.cost_price) : '1250.00');
-    setSalePrice(p.sale_price ? String(p.sale_price) : '1750.00');
-    setWholesalePrice(p.wholesale_price ? String(p.wholesale_price) : '1600.00');
-    setVatPercent(p.vat_percent ? String(p.vat_percent) : '14');
     setStockQuantity(p.stock_quantity ? String(p.stock_quantity) : '25');
     setMinStock(p.min_stock ? String(p.min_stock) : '5');
     setWarehouse(p.warehouse || 'المخزن الرئيسي');
@@ -172,12 +194,8 @@ const AdminProducts = () => {
     setShowInHero(p.show_in_hero !== false);
 
     setShowForm(true);
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
   };
-
-  function DEFAULT_SIZES_FALLBACK(p: any) {
-    if (p.specs_size) return [p.specs_size];
-    return ['20 مم', '25 مم', '32 مم', '110 مم'];
-  }
 
   // Upload Handlers
   const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -193,6 +211,21 @@ const AdminProducts = () => {
       toast({ title: 'تم رفع الصورة بنجاح 🖼️' });
     } catch (err: any) {
       toast({ title: 'خطأ أثناء رفع الصورة', description: err.message, variant: 'destructive' });
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleDrawingUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files || e.target.files.length === 0) return;
+    setUploading(true);
+    try {
+      const file = e.target.files[0];
+      const { url } = await uploadFileToSupabase(file, 'drawings');
+      setDrawingUrl(url);
+      toast({ title: 'تم رفع الرسم الفني بنجاح 📐' });
+    } catch (err: any) {
+      toast({ title: 'خطأ أثناء رفع الرسم الفني', description: err.message, variant: 'destructive' });
     } finally {
       setUploading(false);
     }
@@ -231,6 +264,32 @@ const AdminProducts = () => {
     setCustomSizeInput('');
   };
 
+  // Toggle Pressure selection
+  const togglePressure = (pr: string) => {
+    setSelectedPressures(prev => prev.includes(pr) ? prev.filter(x => x !== pr) : [...prev, pr]);
+  };
+
+  const addCustomPressure = () => {
+    if (!customPressureInput.trim()) return;
+    if (!selectedPressures.includes(customPressureInput.trim())) {
+      setSelectedPressures(prev => [...prev, customPressureInput.trim()]);
+    }
+    setCustomPressureInput('');
+  };
+
+  // Matrix Row Handlers
+  const addMatrixRow = () => {
+    setSizesMatrix(prev => [...prev, { size: '200', outer: '200.00', inner: '160.00', wall: '16.00', radius: '250', pressure: '16 بار' }]);
+  };
+
+  const updateMatrixRow = (idx: number, key: string, val: string) => {
+    setSizesMatrix(prev => prev.map((row, i) => i === idx ? { ...row, [key]: val } : row));
+  };
+
+  const removeMatrixRow = (idx: number) => {
+    setSizesMatrix(prev => prev.filter((_, i) => i !== idx));
+  };
+
   // Toggle Feature selection
   const toggleFeature = (feat: string) => {
     setSelectedFeatures(prev => prev.includes(feat) ? prev.filter(x => x !== feat) : [...prev, feat]);
@@ -266,19 +325,18 @@ const AdminProducts = () => {
       product_code: productCode.trim() || `SKU-${Date.now().toString().slice(-6)}`,
       barcode: barcode.trim() || null,
       image_url: imageUrl || (galleryImages[0] || null),
+      drawing_url: drawingUrl || null,
+      pdf_url: pdfUrl || null,
       sizes: selectedSizes,
+      pressures: selectedPressures,
+      sizes_matrix: sizesMatrix,
       material: material,
-      pressure: pressure,
       connection_type: connectionType,
       seal_material: sealMaterial,
       temperature: temperature,
       origin: origin,
       warranty: warranty,
       features: selectedFeatures.map(f => ({ title: f })),
-      cost_price: parseFloat(costPrice) || 0,
-      sale_price: parseFloat(salePrice) || 0,
-      wholesale_price: parseFloat(wholesalePrice) || 0,
-      vat_percent: parseFloat(vatPercent) || 14,
       stock_quantity: parseInt(stockQuantity, 10) || 0,
       min_stock: parseInt(minStock, 10) || 5,
       warehouse: warehouse,
@@ -318,6 +376,7 @@ const AdminProducts = () => {
       if (andCreateNew) {
         resetForm();
         setShowForm(true);
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
       } else {
         setShowForm(false);
         resetForm();
@@ -351,7 +410,7 @@ const AdminProducts = () => {
   return (
     <div className="space-y-6 text-right" dir="rtl">
       
-      {/* View 1: Add/Edit Product Full Page Form (Matching Screenshot) */}
+      {/* View 1: Add/Edit Product Full Page Form */}
       {showForm ? (
         <div className="space-y-6">
           {/* Top Form Action Bar */}
@@ -395,16 +454,16 @@ const AdminProducts = () => {
           {/* Cards Grid Container */}
           <div className="grid gap-6 lg:grid-cols-3">
             
-            {/* Left Column: Product Images + Pricing + Inventory */}
+            {/* Left Column: Product Images + Drawing + Status */}
             <div className="space-y-6 lg:col-span-1">
               
               {/* Card 1: صور المنتج (Product Images) */}
               <div className="rounded-2xl border border-border bg-card p-5 shadow-sm space-y-4">
                 <div className="flex items-center justify-between border-b border-border/50 pb-3">
                   <div className="flex items-center gap-2 text-primary font-bold text-sm">
-                    <ImageIcon className="h-4 w-4" /> صور المنتج
+                    <ImageIcon className="h-4 w-4" /> صور المنتج والمعرض
                   </div>
-                  <span className="text-[11px] text-muted-foreground">يمكنك رفع حتى 10 صور للمنتج</span>
+                  <span className="text-[11px] text-muted-foreground">حتى 10 صور</span>
                 </div>
 
                 {/* Dropzone */}
@@ -412,7 +471,7 @@ const AdminProducts = () => {
                   <input type="file" accept="image/*" multiple onChange={handleGalleryUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
                   <Upload className="mx-auto h-8 w-8 text-primary/70 mb-2" />
                   <p className="text-xs font-bold text-foreground">اضغط لرفع الصور</p>
-                  <p className="text-[10px] text-muted-foreground mt-1">أو اسحب الصور وأفلتها هنا (الحد الأقصى 5 ميجابايت JPG, PNG)</p>
+                  <p className="text-[10px] text-muted-foreground mt-1">أو اسحب الصور وأفلتها هنا (JPG, PNG)</p>
                 </div>
 
                 {/* Image Thumbnails Grid */}
@@ -442,61 +501,52 @@ const AdminProducts = () => {
                     <input type="file" accept="image/*" onChange={handleImageUpload} id="add-single-img" className="hidden" />
                   </label>
                 </div>
-                <p className="text-[10px] text-muted-foreground text-center">* اسحب الصور لترتيبها</p>
+                <p className="text-[10px] text-muted-foreground text-center">* انقر على أي صورة لتحديدها كصورة رئيسية للمنتج</p>
               </div>
 
-              {/* Card 2: الأسعار (Pricing) */}
-              <div className="rounded-2xl border border-border bg-card p-5 shadow-sm space-y-4">
-                <div className="flex items-center gap-2 text-emerald-600 font-bold text-sm border-b border-border/50 pb-3">
-                  <DollarSign className="h-4 w-4" /> الأسعار
-                </div>
-                <div className="grid grid-cols-2 gap-3 text-xs">
-                  <div>
-                    <label className="block font-bold text-foreground mb-1">سعر الشراء (ج.م)</label>
-                    <input type="text" value={costPrice} onChange={e => setCostPrice(e.target.value)} className="w-full rounded-xl border border-input bg-background p-2.5 text-xs font-mono outline-none focus:border-primary" />
-                  </div>
-                  <div>
-                    <label className="block font-bold text-foreground mb-1">سعر البيع (ج.م) *</label>
-                    <input type="text" value={salePrice} onChange={e => setSalePrice(e.target.value)} className="w-full rounded-xl border border-input bg-background p-2.5 text-xs font-mono outline-none focus:border-primary" />
-                  </div>
-                  <div>
-                    <label className="block font-bold text-foreground mb-1">سعر الجملة (ج.م)</label>
-                    <input type="text" value={wholesalePrice} onChange={e => setWholesalePrice(e.target.value)} className="w-full rounded-xl border border-input bg-background p-2.5 text-xs font-mono outline-none focus:border-primary" />
-                  </div>
-                  <div>
-                    <label className="block font-bold text-foreground mb-1">الضريبة (%)</label>
-                    <input type="text" value={vatPercent} onChange={e => setVatPercent(e.target.value)} className="w-full rounded-xl border border-input bg-background p-2.5 text-xs font-mono outline-none focus:border-primary" />
-                  </div>
-                </div>
-              </div>
-
-              {/* Card 3: المخزون (Inventory) */}
+              {/* Card 2: الرسم الفني (Technical Blueprint Diagram) */}
               <div className="rounded-2xl border border-border bg-card p-5 shadow-sm space-y-4">
                 <div className="flex items-center gap-2 text-indigo-600 font-bold text-sm border-b border-border/50 pb-3">
-                  <Package className="h-4 w-4" /> المخزون
+                  <FileText className="h-4 w-4" /> الرسم الفني والكتالوج (Diagram & PDF)
                 </div>
-                <div className="grid grid-cols-2 gap-3 text-xs">
+
+                <div className="space-y-3 text-xs">
                   <div>
-                    <label className="block font-bold text-foreground mb-1">الكمية المتوفرة *</label>
-                    <input type="number" value={stockQuantity} onChange={e => setStockQuantity(e.target.value)} className="w-full rounded-xl border border-input bg-background p-2.5 text-xs font-mono outline-none focus:border-primary" />
+                    <label className="block font-bold text-foreground mb-1">صورة الرسم الفني الهيكلي (Technical Diagram)</label>
+                    <div className="flex items-center gap-2">
+                      <input type="file" accept="image/*" onChange={handleDrawingUpload} className="hidden" id="drawing-img-input" />
+                      <label htmlFor="drawing-img-input" className="cursor-pointer rounded-xl bg-accent border border-border px-3 py-2 font-bold text-xs hover:bg-primary hover:text-white shrink-0">
+                        {uploading ? 'جاري الرفع...' : 'رفع رسم فني'}
+                      </label>
+                      <input type="text" value={drawingUrl} onChange={e => setDrawingUrl(e.target.value)} placeholder="أو ضع رابط صورة الرسم الفني..." className="w-full rounded-xl border border-input bg-background p-2 text-xs outline-none" dir="ltr" />
+                    </div>
+                    {drawingUrl && (
+                      <div className="mt-2 h-20 w-full rounded-xl border border-border bg-accent/20 p-2 flex items-center justify-center">
+                        <img src={drawingUrl} alt="Diagram" className="max-h-full max-w-full object-contain" />
+                      </div>
+                    )}
                   </div>
+
                   <div>
-                    <label className="block font-bold text-foreground mb-1">الحد الأدنى للمخزون</label>
-                    <input type="number" value={minStock} onChange={e => setMinStock(e.target.value)} className="w-full rounded-xl border border-input bg-background p-2.5 text-xs font-mono outline-none focus:border-primary" />
+                    <label className="block font-bold text-foreground mb-1">رابط كتالوج PDF للمنتج</label>
+                    <input type="text" value={pdfUrl} onChange={e => setPdfUrl(e.target.value)} placeholder="https://example.com/brochure.pdf" className="w-full rounded-xl border border-input bg-background p-2.5 text-xs outline-none" dir="ltr" />
                   </div>
+                </div>
+              </div>
+
+              {/* Card 3: حالة التوفر (Availability) */}
+              <div className="rounded-2xl border border-border bg-card p-5 shadow-sm space-y-4">
+                <div className="flex items-center gap-2 text-emerald-600 font-bold text-sm border-b border-border/50 pb-3">
+                  <CheckSquare className="h-4 w-4" /> حالة التوفر بالمخزن
+                </div>
+                
+                <div className="space-y-3 text-xs">
                   <div>
-                    <label className="block font-bold text-foreground mb-1">المخزن</label>
-                    <select value={warehouse} onChange={e => setWarehouse(e.target.value)} className="w-full rounded-xl border border-input bg-background p-2.5 text-xs outline-none">
-                      <option value="المخزن الرئيسي">المخزن الرئيسي</option>
-                      <option value="فرع النوبارية">فرع النوبارية</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block font-bold text-foreground mb-1">حالة المنتج *</label>
+                    <label className="block font-bold text-foreground mb-1">حالة المنتج بالموقع *</label>
                     <select value={availability} onChange={e => setAvailability(e.target.value)} className="w-full rounded-xl border border-input bg-background p-2.5 text-xs font-bold text-emerald-600 outline-none">
-                      <option value="available">متوفر</option>
-                      <option value="on_request">عند الطلب</option>
-                      <option value="out_of_stock">غير متوفر</option>
+                      <option value="available">• متوفر في المخزون</option>
+                      <option value="on_request">• متوفر عند الطلب</option>
+                      <option value="out_of_stock">• غير متوفر حالياً</option>
                     </select>
                   </div>
                 </div>
@@ -504,7 +554,7 @@ const AdminProducts = () => {
 
             </div>
 
-            {/* Middle & Right Column: Basic Data + Descriptions + Specs + SEO */}
+            {/* Middle & Right Column: Basic Data + Descriptions + Specs + Matrix */}
             <div className="space-y-6 lg:col-span-2">
               
               {/* Card 4: البيانات الأساسية (Basic Info) */}
@@ -516,11 +566,11 @@ const AdminProducts = () => {
                 <div className="grid gap-3 sm:grid-cols-2 text-xs">
                   <div>
                     <label className="block font-bold text-foreground mb-1">اسم المنتج بالعربي *</label>
-                    <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="مثال: صمام فراشة (DKV) PVC 4 إنش" className="w-full rounded-xl border border-input bg-background p-3 text-xs outline-none focus:border-primary" />
+                    <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="مثال: كوع 90 درجة PVC ضغط عالي" className="w-full rounded-xl border border-input bg-background p-3 text-xs outline-none focus:border-primary" />
                   </div>
                   <div>
                     <label className="block font-bold text-foreground mb-1">الاسم بالإنجليزي</label>
-                    <input type="text" value={titleEn} onChange={e => setTitleEn(e.target.value)} placeholder="DKV PVC Butterfly Valve 4 Inch" className="w-full rounded-xl border border-input bg-background p-3 text-xs outline-none focus:border-primary" dir="ltr" />
+                    <input type="text" value={titleEn} onChange={e => setTitleEn(e.target.value)} placeholder="PVC 90 Degree Elbow High Pressure" className="w-full rounded-xl border border-input bg-background p-3 text-xs outline-none focus:border-primary" dir="ltr" />
                   </div>
 
                   <div>
@@ -533,14 +583,14 @@ const AdminProducts = () => {
 
                   <div>
                     <label className="block font-bold text-foreground mb-1">التصنيف الفرعي</label>
-                    <input type="text" value={subCategory} onChange={e => setSubCategory(e.target.value)} placeholder="صمامات فراشة" className="w-full rounded-xl border border-input bg-background p-3 text-xs outline-none focus:border-primary" />
+                    <input type="text" value={subCategory} onChange={e => setSubCategory(e.target.value)} placeholder="أكواع PVC" className="w-full rounded-xl border border-input bg-background p-3 text-xs outline-none focus:border-primary" />
                   </div>
 
                   <div>
                     <label className="block font-bold text-foreground mb-1">الماركة *</label>
-                    <select value={brandName} onChange={e => setBrandName(e.target.value)} className="w-full rounded-xl border border-input bg-background p-3 text-xs outline-none focus:border-primary">
-                      <option value="DKV">DKV</option>
+                    <select value={brandName} onChange={e => setBrandName(e.target.value)} className="w-full rounded-xl border border-input bg-background p-3 text-xs outline-none focus:border-primary font-bold text-primary">
                       <option value="ERA">ERA</option>
+                      <option value="DKV">DKV</option>
                       <option value="AZUD">AZUD</option>
                       <option value="NETAFIM">NETAFIM</option>
                       <option value="PLASSON">PLASSON</option>
@@ -551,18 +601,8 @@ const AdminProducts = () => {
                   </div>
 
                   <div>
-                    <label className="block font-bold text-foreground mb-1">رقم الموديل</label>
-                    <input type="text" value={modelNumber} onChange={e => setModelNumber(e.target.value)} placeholder="DKV-BV-PVC-4" className="w-full rounded-xl border border-input bg-background p-3 text-xs outline-none focus:border-primary" dir="ltr" />
-                  </div>
-
-                  <div>
-                    <label className="block font-bold text-foreground mb-1">SKU / كود المنتج *</label>
-                    <input type="text" value={productCode} onChange={e => setProductCode(e.target.value)} placeholder="DKV-PVC-BV-4IN" className="w-full rounded-xl border border-input bg-background p-3 text-xs outline-none focus:border-primary font-mono" dir="ltr" />
-                  </div>
-
-                  <div>
-                    <label className="block font-bold text-foreground mb-1">الباركود</label>
-                    <input type="text" value={barcode} onChange={e => setBarcode(e.target.value)} placeholder="6921109012345" className="w-full rounded-xl border border-input bg-background p-3 text-xs outline-none focus:border-primary font-mono" dir="ltr" />
+                    <label className="block font-bold text-foreground mb-1">رمز / كود المنتج (SKU) *</label>
+                    <input type="text" value={productCode} onChange={e => setProductCode(e.target.value)} placeholder="ERA-EL-90-110" className="w-full rounded-xl border border-input bg-background p-3 text-xs outline-none focus:border-primary font-mono" dir="ltr" />
                   </div>
                 </div>
               </div>
@@ -579,26 +619,18 @@ const AdminProducts = () => {
                       <label className="font-bold text-foreground">وصف مختصر *</label>
                       <span className="text-muted-foreground text-[10px]">{description.length}/300</span>
                     </div>
-                    <textarea value={description} onChange={e => setDescription(e.target.value)} rows={2} maxLength={300} placeholder="اكتب وصفاً موجزاً يظهر في كارت المنتج..." className="w-full rounded-xl border border-input bg-background p-3 text-xs outline-none focus:border-primary resize-none" />
-                  </div>
-
-                  <div>
-                    <div className="flex justify-between mb-1">
-                      <label className="font-bold text-foreground">الوصف الكامل والمواصفات الشاملة</label>
-                      <span className="text-muted-foreground text-[10px]">{fullDescription.length}/2000</span>
-                    </div>
-                    <textarea value={fullDescription} onChange={e => setFullDescription(e.target.value)} rows={4} maxLength={2000} placeholder="اكتب التفاصيل الكاملة واستخدامات المنتج..." className="w-full rounded-xl border border-input bg-background p-3 text-xs outline-none focus:border-primary resize-none" />
+                    <textarea value={description} onChange={e => setDescription(e.target.value)} rows={2} maxLength={300} placeholder="اكتب وصفاً موجزاً يظهر في صفحة التفاصيل والكروت..." className="w-full rounded-xl border border-input bg-background p-3 text-xs outline-none focus:border-primary resize-none" />
                   </div>
                 </div>
               </div>
 
-              {/* Card 6: المواصفات والمقاسات (Specs & Sizes Selector) */}
-              <div className="rounded-2xl border border-border bg-card p-5 shadow-sm space-y-4">
+              {/* Card 6: المقاسات والضغط (Sizes & Pressures Selectors) */}
+              <div className="rounded-2xl border border-border bg-card p-5 shadow-sm space-y-5">
                 <div className="flex items-center justify-between border-b border-border/50 pb-3">
                   <div className="flex items-center gap-2 text-emerald-600 font-bold text-sm">
-                    <Sliders className="h-4 w-4" /> المواصفات والمقاسات
+                    <Sliders className="h-4 w-4" /> المقاسات المتاحة والضغط (Sizes & Pressure)
                   </div>
-                  <span className="text-[11px] text-muted-foreground">اختر المقاسات المتاحة لهذا المنتج</span>
+                  <span className="text-[11px] text-muted-foreground">اختر القيم ليتم تفعيلها في شريط الخيارات بصفحة التفاصيل</span>
                 </div>
 
                 {/* Sizes Selector Pills */}
@@ -622,13 +654,12 @@ const AdminProducts = () => {
                     })}
                   </div>
 
-                  {/* Add Custom Size */}
                   <div className="flex items-center gap-2 pt-2">
                     <input
                       type="text"
                       value={customSizeInput}
                       onChange={e => setCustomSizeInput(e.target.value)}
-                      placeholder="إضافة مقاس مخصص (مثال: 80 مم أو 5 بوصة)..."
+                      placeholder="إضافة مقاس مخصص (مثال: 200 مم)..."
                       className="rounded-xl border border-input bg-background px-3 py-1.5 text-xs outline-none flex-1"
                     />
                     <button type="button" onClick={addCustomSize} className="rounded-xl bg-accent border border-border px-4 py-1.5 text-xs font-bold text-foreground hover:bg-primary hover:text-white">
@@ -637,49 +668,76 @@ const AdminProducts = () => {
                   </div>
                 </div>
 
-                {/* Specs Selectors */}
-                <div className="grid gap-3 sm:grid-cols-4 text-xs pt-2">
-                  <div>
-                    <label className="block font-bold text-foreground mb-1">الخامة</label>
-                    <select value={material} onChange={e => setMaterial(e.target.value)} className="w-full rounded-xl border border-input bg-background p-2.5 text-xs outline-none">
-                      <option value="PVC">PVC</option>
-                      <option value="UPVC">UPVC</option>
-                      <option value="HDPE">HDPE</option>
-                      <option value="PP">PP</option>
-                      <option value="معدن">معدن</option>
-                    </select>
+                {/* Pressures Selector Pills */}
+                <div className="space-y-2 border-t border-border/40 pt-3">
+                  <label className="block text-xs font-bold text-foreground">خيارات الضغط المتاحة (* انقر للتفعيل):</label>
+                  <div className="flex flex-wrap gap-2">
+                    {COMMON_PRESSURES.map(pr => {
+                      const isSelected = selectedPressures.includes(pr);
+                      return (
+                        <button
+                          key={pr}
+                          type="button"
+                          onClick={() => togglePressure(pr)}
+                          className={`rounded-xl px-4 py-1.5 text-xs font-bold transition-all border ${
+                            isSelected ? 'border-emerald-500 bg-emerald-500/10 text-emerald-600 ring-2 ring-emerald-500/20' : 'border-border bg-accent/20 text-muted-foreground hover:bg-accent'
+                          }`}
+                        >
+                          {pr} {isSelected ? '✓' : ''}
+                        </button>
+                      );
+                    })}
                   </div>
-                  <div>
-                    <label className="block font-bold text-foreground mb-1">ضغط التشغيل</label>
-                    <select value={pressure} onChange={e => setPressure(e.target.value)} className="w-full rounded-xl border border-input bg-background p-2.5 text-xs outline-none">
-                      <option value="16 بار">16 بار (200 PSI)</option>
-                      <option value="10 بار">10 بار</option>
-                      <option value="6 بار">6 بار</option>
-                    </select>
+                </div>
+
+              </div>
+
+              {/* Card 7: جدول المقاسات الفنية التفصيلي (Matrix Table Editor) */}
+              <div className="rounded-2xl border border-border bg-card p-5 shadow-sm space-y-4">
+                <div className="flex items-center justify-between border-b border-border/50 pb-3">
+                  <div className="flex items-center gap-2 text-indigo-600 font-bold text-sm">
+                    <Layers className="h-4 w-4" /> جدول المقاسات الفنية التفصيلي (Dimensions Matrix Table)
                   </div>
-                  <div>
-                    <label className="block font-bold text-foreground mb-1">نوع التوصيل</label>
-                    <select value={connectionType} onChange={e => setConnectionType(e.target.value)} className="w-full rounded-xl border border-input bg-background p-2.5 text-xs outline-none">
-                      <option value="ملحوم / لاصق">ملحوم / لاصق</option>
-                      <option value="(فلانشة) Flange">(فلانشة) Flange</option>
-                      <option value="قلاووظ / سن">قلاووظ / سن</option>
-                      <option value="وصلة compression">وصلة compression</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block font-bold text-foreground mb-1">بلد المنشأ</label>
-                    <select value={origin} onChange={e => setOrigin(e.target.value)} className="w-full rounded-xl border border-input bg-background p-2.5 text-xs outline-none">
-                      <option value="تركيا">تركيا</option>
-                      <option value="مصر">مصر</option>
-                      <option value="الصين">الصين</option>
-                      <option value="إسبانيا">إسبانيا</option>
-                      <option value="إيطاليا">إيطاليا</option>
-                    </select>
-                  </div>
+                  <button type="button" onClick={addMatrixRow} className="rounded-xl bg-primary px-3 py-1.5 text-xs font-bold text-white shadow hover:bg-primary/90">
+                    + إضافة صف جديد
+                  </button>
+                </div>
+
+                <div className="overflow-x-auto">
+                  <table className="w-full text-center text-xs">
+                    <thead>
+                      <tr className="border-b border-border bg-muted/40 font-bold text-muted-foreground">
+                        <th className="p-2">المقاس</th>
+                        <th className="p-2">القطر الخارجي (D)</th>
+                        <th className="p-2">القطر الداخلي (d)</th>
+                        <th className="p-2">السمك (t)</th>
+                        <th className="p-2">نصف القطر (R)</th>
+                        <th className="p-2">الضغط</th>
+                        <th className="p-2">إجراء</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {sizesMatrix.map((row, idx) => (
+                        <tr key={idx}>
+                          <td className="p-1"><input type="text" value={row.size} onChange={e => updateMatrixRow(idx, 'size', e.target.value)} className="w-16 rounded border bg-background p-1 text-center font-bold" /></td>
+                          <td className="p-1"><input type="text" value={row.outer} onChange={e => updateMatrixRow(idx, 'outer', e.target.value)} className="w-20 rounded border bg-background p-1 text-center" /></td>
+                          <td className="p-1"><input type="text" value={row.inner} onChange={e => updateMatrixRow(idx, 'inner', e.target.value)} className="w-20 rounded border bg-background p-1 text-center" /></td>
+                          <td className="p-1"><input type="text" value={row.wall} onChange={e => updateMatrixRow(idx, 'wall', e.target.value)} className="w-16 rounded border bg-background p-1 text-center" /></td>
+                          <td className="p-1"><input type="text" value={row.radius} onChange={e => updateMatrixRow(idx, 'radius', e.target.value)} className="w-16 rounded border bg-background p-1 text-center" /></td>
+                          <td className="p-1"><input type="text" value={row.pressure} onChange={e => updateMatrixRow(idx, 'pressure', e.target.value)} className="w-20 rounded border bg-background p-1 text-center" /></td>
+                          <td className="p-1">
+                            <button type="button" onClick={() => removeMatrixRow(idx)} className="rounded p-1 text-rose-600 hover:bg-rose-50">
+                              <X className="h-4 w-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               </div>
 
-              {/* Card 7: مميزات المنتج (Features Checklist) */}
+              {/* Card 8: مميزات المنتج (Features Checklist) */}
               <div className="rounded-2xl border border-border bg-card p-5 shadow-sm space-y-4">
                 <div className="flex items-center gap-2 text-purple-600 font-bold text-sm border-b border-border/50 pb-3">
                   <Sparkles className="h-4 w-4" /> مميزات المنتج
@@ -705,7 +763,7 @@ const AdminProducts = () => {
                 </div>
               </div>
 
-              {/* Card 8: SEO + خيارات العرض (SEO & Display Options) */}
+              {/* Card 9: SEO وخيارات العرض */}
               <div className="rounded-2xl border border-border bg-card p-5 shadow-sm space-y-4">
                 <div className="flex items-center gap-2 text-sky-600 font-bold text-sm border-b border-border/50 pb-3">
                   <Globe className="h-4 w-4" /> تحسين البحث (SEO) وخيارات العرض
@@ -714,7 +772,7 @@ const AdminProducts = () => {
                 <div className="grid gap-3 sm:grid-cols-2 text-xs">
                   <div>
                     <label className="block font-bold text-foreground mb-1">رابط المنتج (Slug)</label>
-                    <input type="text" value={slug} onChange={e => setSlug(e.target.value)} placeholder="dkv-pvc-butterfly-valve-4-inch" className="w-full rounded-xl border border-input bg-background p-2.5 text-xs outline-none font-mono" dir="ltr" />
+                    <input type="text" value={slug} onChange={e => setSlug(e.target.value)} placeholder="pvc-90-degree-elbow" className="w-full rounded-xl border border-input bg-background p-2.5 text-xs outline-none font-mono" dir="ltr" />
                   </div>
                   <div>
                     <label className="block font-bold text-foreground mb-1">عنوان الصفحة (SEO Title)</label>
@@ -761,10 +819,10 @@ const AdminProducts = () => {
             </div>
 
             <button
-              onClick={() => { resetForm(); setShowForm(true); }}
-              className="flex items-center gap-2 rounded-xl bg-primary px-5 py-2.5 text-xs font-black text-primary-foreground shadow-lg hover:scale-[1.02] transition-all"
+              onClick={handleOpenAddForm}
+              className="flex items-center gap-2 rounded-xl bg-emerald-600 px-6 py-3 text-xs font-black text-white shadow-lg hover:bg-emerald-700 hover:scale-[1.02] transition-all cursor-pointer"
             >
-              <Plus className="h-4 w-4" /> إضافة منتج جديد
+              <Plus className="h-4 w-4" /> + إضافة منتج جديد
             </button>
           </div>
 

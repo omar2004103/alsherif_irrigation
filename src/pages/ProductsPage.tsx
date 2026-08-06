@@ -51,9 +51,9 @@ function ProductCard({ product, categoryName, onPreview, onAddQuote }: {
       transition={{ duration: 0.3 }}
       className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-border/80 bg-card shadow-card transition-all duration-300 hover:shadow-card-hover hover:-translate-y-1"
     >
-      {/* Card Header Image Area */}
-      <div className="relative aspect-[4/3] w-full overflow-hidden bg-gradient-to-b from-muted/20 to-card p-4 flex items-center justify-center border-b border-border/40">
-        {/* Top Badges */}
+      {/* Crisp Product Image Box */}
+      <Link to={`/product/${product.slug}`} className="relative aspect-[4/3] w-full overflow-hidden bg-gradient-to-b from-muted/20 to-card p-4 flex items-center justify-center border-b border-border/40 cursor-pointer block">
+        {/* Top Status & Promo Badges */}
         <div className="absolute top-3 inset-x-3 z-10 flex items-center justify-between pointer-events-none">
           <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-bold text-emerald-600 border border-emerald-500/20">
             • متوفر
@@ -87,12 +87,12 @@ function ProductCard({ product, categoryName, onPreview, onAddQuote }: {
             {product.brand}
           </div>
         )}
-      </div>
+      </Link>
 
       {/* Card Body */}
       <div className="flex flex-1 flex-col p-4 text-right">
         <Link to={`/product/${product.slug}`} className="block">
-          <h3 className="mb-1 text-base font-black text-foreground line-clamp-1 group-hover:text-primary transition-colors">
+          <h3 className="mb-1 text-base font-black text-foreground line-clamp-1 group-hover:text-primary transition-colors cursor-pointer">
             {product.title}
           </h3>
         </Link>

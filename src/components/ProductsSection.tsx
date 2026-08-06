@@ -27,7 +27,7 @@ const ProductCard = forwardRef<HTMLDivElement, { product: Product; categoryName?
         exit={{ opacity: 0, scale: 0.95 }}
         className="group rounded-2xl border border-border/80 bg-card overflow-hidden shadow-card transition-all duration-300 hover:shadow-card-hover hover:-translate-y-1 flex flex-col h-full"
       >
-        <div className="relative aspect-[4/3] w-full overflow-hidden bg-gradient-to-b from-muted/20 to-card p-4 flex items-center justify-center border-b border-border/40">
+        <Link to={`/product/${product.slug}`} className="relative aspect-[4/3] w-full overflow-hidden bg-gradient-to-b from-muted/20 to-card p-4 flex items-center justify-center border-b border-border/40 cursor-pointer block">
           <div className="absolute top-3 inset-x-3 z-10 flex items-center justify-between pointer-events-none">
             <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-bold text-emerald-600 border border-emerald-500/20">
               • متوفر
@@ -54,17 +54,19 @@ const ProductCard = forwardRef<HTMLDivElement, { product: Product; categoryName?
               {(product as any).brand}
             </div>
           )}
-        </div>
+        </Link>
 
         <div className="p-4 flex flex-col flex-1 text-right">
-          <h3 className="mb-1 text-base font-black text-foreground group-hover:text-primary transition-colors line-clamp-1">{product.title}</h3>
+          <Link to={`/product/${product.slug}`}>
+            <h3 className="mb-1 text-base font-black text-foreground group-hover:text-primary transition-colors line-clamp-1 cursor-pointer">{product.title}</h3>
+          </Link>
           <p className="mb-3 text-xs leading-relaxed text-muted-foreground line-clamp-1">{product.description || (categoryName ? `قسم ${categoryName}` : 'مواصفات ممتازة لنظم الري')}</p>
           
           <div className="mt-auto grid grid-cols-2 gap-2 pt-2 border-t border-border/50">
-            <button onClick={() => onDetails(product)}
+            <Link to={`/product/${product.slug}`}
               className="inline-flex items-center justify-center rounded-xl border border-border bg-background px-2.5 py-2 text-xs font-bold text-foreground transition-colors hover:bg-accent hover:text-primary">
               عرض التفاصيل
-            </button>
+            </Link>
             <a href={getWhatsAppLink('201111661177', `طلب عرض سعر: ${product.title}`)} target="_blank" rel="noopener noreferrer"
               className="inline-flex items-center justify-center gap-1 rounded-xl border border-primary/30 bg-primary/10 px-2.5 py-2 text-xs font-bold text-primary transition-colors hover:bg-primary hover:text-primary-foreground">
               طلب عرض سعر

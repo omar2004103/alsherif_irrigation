@@ -243,7 +243,7 @@ const ProductDetailsPage = () => {
     { label: 'درجة الحرارة', value: '0°C إلى 45°C' },
     { label: 'المعيار', value: 'ISO 1452 / DIN 8063' },
     { label: 'بلد المنشأ', value: 'تركيا / مصر' },
-    { label: 'الماركة', value: product.brand || 'ERA' },
+    { label: 'الماركة', value: product.brand || 'آل شريف' },
   ]) as Array<{ label: string; value: string }>;
 
   const canonicalUrl = `https://alsherif-irrigation.lovable.app/product/${product.slug}`;
@@ -312,9 +312,11 @@ const ProductDetailsPage = () => {
                   <span className="h-2 w-2 rounded-full bg-emerald-500" /> {AVAIL[product.availability] || AVAIL.available}
                 </span>
 
-                <div className="flex items-center gap-2">
-                  <span className="text-xl font-black tracking-tight text-primary font-mono">{product.brand || 'ERA'}</span>
-                </div>
+                {product.brand && (
+                  <div className="flex items-center gap-2">
+                    <span className="text-xl font-black tracking-tight text-primary font-mono">{product.brand}</span>
+                  </div>
+                )}
               </div>
 
               {/* Title & Product Code */}
@@ -325,7 +327,7 @@ const ProductDetailsPage = () => {
                 <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground">
                   <span>القسم: <strong className="text-foreground">{category?.name || 'مواسير PVC'}</strong></span>
                   <span>•</span>
-                  <span>رمز المنتج: <strong className="text-foreground font-mono" dir="ltr">#{product.product_code || `ERA-${product.slug.toUpperCase()}`}</strong></span>
+                  <span>رمز المنتج: <strong className="text-foreground font-mono" dir="ltr">#{product.product_code || `SKU-${product.slug.toUpperCase()}`}</strong></span>
                 </div>
               </div>
 

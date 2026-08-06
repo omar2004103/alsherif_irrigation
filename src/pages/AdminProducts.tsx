@@ -636,10 +636,9 @@ const AdminProducts = () => {
                   </div>
 
                   <div>
-                    <label className="block font-bold text-foreground mb-1">الماركة * (اختر أو اكتب ماركة مخصصة)</label>
+                    <label className="block font-bold text-foreground mb-1">الماركة * (اختر من القائمة أو اكتب يدوياً)</label>
                     <div className="space-y-1.5">
                       <select value={brandName} onChange={e => setBrandName(e.target.value)} className="w-full rounded-xl border border-input bg-background p-2.5 text-xs outline-none focus:border-primary font-bold text-primary">
-                        <option value="ERA">ERA</option>
                         <option value="DKV">DKV</option>
                         <option value="AZUD">AZUD</option>
                         <option value="NETAFIM">NETAFIM</option>
@@ -652,15 +651,15 @@ const AdminProducts = () => {
                         type="text"
                         value={brandName}
                         onChange={e => setBrandName(e.target.value)}
-                        placeholder="أو اكتب اسم الماركة يدوياً هنا..."
-                        className="w-full rounded-xl border border-input bg-background p-2 text-xs outline-none focus:border-primary font-bold"
+                        placeholder="أو اكتب اسم الماركة يدوياً..."
+                        className="w-full rounded-xl border border-input bg-background p-2 text-xs outline-none focus:border-primary font-bold text-primary"
                       />
                     </div>
                   </div>
 
                   <div>
                     <label className="block font-bold text-foreground mb-1">رمز / كود المنتج (SKU) *</label>
-                    <input type="text" value={productCode} onChange={e => setProductCode(e.target.value)} placeholder="ERA-EL-90-110" className="w-full rounded-xl border border-input bg-background p-3 text-xs outline-none focus:border-primary font-mono" dir="ltr" />
+                    <input type="text" value={productCode} onChange={e => setProductCode(e.target.value)} placeholder="SKU-EL-90-110" className="w-full rounded-xl border border-input bg-background p-3 text-xs outline-none focus:border-primary font-mono" dir="ltr" />
                   </div>
                 </div>
               </div>
@@ -973,7 +972,7 @@ const AdminProducts = () => {
 
                           <td className="p-3.5">
                             <div className="font-medium text-foreground">{categoryName}</div>
-                            <span className="text-[10px] text-primary font-bold">{p.brand || 'ERA'}</span>
+                            <span className="text-[10px] text-primary font-bold">{p.brand || 'آل شريف'}</span>
                           </td>
 
                           <td className="p-3.5">

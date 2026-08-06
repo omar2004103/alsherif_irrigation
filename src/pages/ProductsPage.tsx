@@ -40,97 +40,92 @@ function AvailabilityBadge({ value }: { value: string }) {
 function ProductCard({ product, categoryName, onPreview, onAddQuote }: {
   product: Product; categoryName?: string; onPreview: (p: Product) => void; onAddQuote: (p: Product) => void;
 }) {
+  const badgeTag = product.badge_tag || (product.featured ? 'الأكثر مبيعاً' : null);
+
   return (
     <motion.article
       layout
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: 16 }}
-      transition={{ duration: 0.35 }}
-      className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-card transition-all duration-500 hover:shadow-card-hover hover:-translate-y-1"
+      transition={{ duration: 0.3 }}
+      className="group relative flex h-full flex-col overflow-hidden rounded-2xl border border-border/80 bg-card shadow-card transition-all duration-300 hover:shadow-card-hover hover:-translate-y-1"
     >
-      {/* High Quality Image Container with Blurred Backdrop fallback */}
-      <div className="relative aspect-[4/3] w-full overflow-hidden bg-gradient-to-tr from-accent/50 via-card to-accent/30 flex items-center justify-center p-4">
+      {/* Card Header Image Area */}
+      <div className="relative aspect-[4/3] w-full overflow-hidden bg-gradient-to-b from-muted/20 to-card p-4 flex items-center justify-center border-b border-border/40">
+        {/* Top Badges */}
+        <div className="absolute top-3 inset-x-3 z-10 flex items-center justify-between pointer-events-none">
+          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[11px] font-bold text-emerald-600 border border-emerald-500/20">
+            • متوفر
+          </span>
+          {badgeTag && (
+            <span className={`rounded-lg px-2.5 py-0.5 text-[10px] font-extrabold text-white shadow-sm ${
+              badgeTag === 'خصم' ? 'bg-rose-600' : badgeTag === 'جديد' ? 'bg-sky-600' : 'bg-amber-500'
+            }`}>
+              {badgeTag}
+            </span>
+          )}
+        </div>
+
+        {/* Crisp Product Image */}
         {product.image_url ? (
-          <>
-            <img
-              src={product.image_url}
-              alt=""
-              aria-hidden="true"
-              className="absolute inset-0 h-full w-full object-cover opacity-20 blur-xl scale-125"
-            />
-            <img
-              src={product.image_url}
-              alt={product.title}
-              loading="lazy"
-              className="relative z-10 max-h-full max-w-full object-contain drop-shadow-md transition-transform duration-500 group-hover:scale-105"
-            />
-          </>
+          <img
+            src={product.image_url}
+            alt={product.title}
+            loading="lazy"
+            className="relative z-0 max-h-full max-w-full object-contain drop-shadow-sm transition-transform duration-500 group-hover:scale-108"
+          />
         ) : (
           <div className="flex h-full w-full items-center justify-center text-muted-foreground/30">
             <Package className="h-14 w-14" strokeWidth={1.2} />
           </div>
         )}
-        
-        <div className="absolute top-3 right-3 z-20 flex flex-col gap-1.5 items-end">
-          <AvailabilityBadge value={product.availability || 'available'} />
-          {product.featured && (
-            <span className="rounded-full bg-[hsl(32,95%,44%)] px-2.5 py-1 text-[11px] font-bold text-white shadow-md">
-              ★ مميز
-            </span>
-          )}
-        </div>
 
-        <button
-          onClick={() => onPreview(product)}
-          className="absolute inset-x-3 bottom-3 z-20 flex items-center justify-center gap-2 rounded-xl bg-card/95 backdrop-blur-md border border-border/60 px-4 py-2 text-xs font-bold text-foreground opacity-0 translate-y-2 transition-all duration-300 group-hover:opacity-100 group-hover:translate-y-0 shadow-md"
-        >
-          <Eye className="h-3.5 w-3.5 text-primary" /> معاينة سريعة
-        </button>
+        {/* Brand Name / Tag */}
+        {product.brand && (
+          <div className="absolute bottom-2.5 right-3 z-10 font-black text-xs tracking-tight text-primary/90 bg-card/90 backdrop-blur-sm px-2 py-0.5 rounded border border-border/40 shadow-xs">
+            {product.brand}
+          </div>
+        )}
       </div>
 
-      <div className="flex flex-1 flex-col p-5">
-        <div className="mb-2 flex items-center justify-between gap-2 text-[11px]">
-          {categoryName && (
-            <span className="font-bold uppercase tracking-wider text-secondary bg-secondary/10 px-2.5 py-0.5 rounded-md">
-              {categoryName}
-            </span>
-          )}
-          {product.product_code && (
-            <span className="text-muted-foreground font-mono text-[10px]" dir="ltr">#{product.product_code}</span>
-          )}
-        </div>
-
-        <Link to={`/product/${product.slug}`}>
-          <h3 className="mb-1.5 text-base font-black text-foreground leading-snug line-clamp-2 group-hover:text-primary transition-colors">
+      {/* Card Body */}
+      <div className="flex flex-1 flex-col p-4 text-right">
+        <Link to={`/product/${product.slug}`} className="block">
+          <h3 className="mb-1 text-base font-black text-foreground line-clamp-1 group-hover:text-primary transition-colors">
             {product.title}
           </h3>
         </Link>
 
-        {product.brand && (
-          <p className="mb-2 text-xs text-muted-foreground">
-            الماركة: <span className="font-bold text-foreground">{product.brand}</span>
-          </p>
-        )}
+        <p className="mb-3 text-xs text-muted-foreground line-clamp-1">
+          {product.description || (categoryName ? `قسم ${categoryName}` : 'مواصفات ممتازة لنظم الري')}
+        </p>
 
-        {product.description && (
-          <p className="mb-4 text-xs text-muted-foreground leading-relaxed line-clamp-2">
-            {product.description}
-          </p>
-        )}
+        {/* Specs Table List */}
+        <div className="mb-4 space-y-1 text-[11px] text-muted-foreground bg-accent/30 p-2.5 rounded-xl border border-border/30">
+          <div className="flex justify-between items-center">
+            <span>المقاسات:</span>
+            <span className="font-bold text-foreground" dir="ltr">{product.sizes?.join(', ') || product.specs_size || 'متعدد المقاسات'}</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span>الضغط:</span>
+            <span className="font-bold text-foreground">{product.pressure || '6 - 16 بار'}</span>
+          </div>
+        </div>
 
-        <div className="mt-auto flex gap-2 pt-2 border-t border-border/50">
+        {/* Action Buttons Row */}
+        <div className="mt-auto grid grid-cols-2 gap-2 pt-2 border-t border-border/50">
           <Link
             to={`/product/${product.slug}`}
-            className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl border border-border bg-background px-3 py-2.5 text-xs font-bold text-foreground transition-colors hover:bg-accent hover:text-primary"
+            className="inline-flex items-center justify-center rounded-xl border border-border bg-background px-2.5 py-2 text-xs font-bold text-foreground transition-colors hover:bg-accent hover:text-primary"
           >
-            التفاصيل <ChevronLeft className="h-3.5 w-3.5" />
+            عرض التفاصيل
           </Link>
           <button
             onClick={() => onAddQuote(product)}
-            className="flex-1 inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary px-3 py-2.5 text-xs font-bold text-primary-foreground shadow-button transition-all hover:-translate-y-0.5"
+            className="inline-flex items-center justify-center gap-1 rounded-xl border border-primary/30 bg-primary/10 px-2.5 py-2 text-xs font-bold text-primary transition-colors hover:bg-primary hover:text-primary-foreground"
           >
-            <FileText className="h-3.5 w-3.5" /> عرض سعر
+            طلب عرض سعر
           </button>
         </div>
       </div>

@@ -1,4 +1,5 @@
 import { useState, forwardRef } from 'react';
+import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Search, MessageCircle, ShoppingCart, Eye, X, Filter } from 'lucide-react';
 import { useProducts, useCategories, useProductImages, getWhatsAppLink } from '@/hooks/useSupabaseData';

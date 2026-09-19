@@ -636,9 +636,9 @@ const ProductsPage = () => {
         <DialogContent className="max-w-2xl overflow-hidden p-0">
           {preview && (
             <div className="grid sm:grid-cols-2">
-              <div className="relative aspect-square sm:aspect-auto bg-accent/30">
+              <div className="relative aspect-square sm:aspect-auto bg-muted/20 flex items-center justify-center p-6 border-b sm:border-b-0 sm:border-l border-border/50">
                 {preview.image_url ? (
-                  <img src={preview.image_url} alt={preview.title} className="h-full w-full object-cover" />
+                  <img src={preview.image_url} alt={preview.title} className="max-h-full max-w-full object-contain drop-shadow-sm" />
                 ) : (
                   <div className="flex h-full items-center justify-center text-muted-foreground/30">
                     <Package className="h-16 w-16" strokeWidth={1.2} />

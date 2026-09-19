@@ -106,6 +106,15 @@ const AdminSettings = () => {
     if (dbSettings) {
       const merged: Record<string, string> = {};
       dbSettings.forEach((s: any) => { merged[s.key] = s.value ?? ''; });
+
+      // Default to verified official Google Maps location if empty or outdated
+      if (!merged.google_map_embed || merged.google_map_embed.includes('P726')) {
+        merged.google_map_embed = 'https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3434.331!2d30.2617714!3d30.7021432!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x1458a9196d930b5b%3A0xeee0d144d3ad9d13!2z2LTYsdmD2Kkg2KfZhCDYtNix2YrZgSDZhNmE2LHZiiDYp9mE2K3Yr9mK2Kw!5e0!3m2!1sar!2seg!4v1726788800000!5m2!1sar!2seg';
+      }
+      if (!merged.google_map_link || merged.google_map_link === '#' || merged.google_map_link.includes('P726')) {
+        merged.google_map_link = 'https://maps.app.goo.gl/MJSzM41LFD4UCEhf8';
+      }
+
       setSettings(merged);
     }
   }, [dbSettings]);

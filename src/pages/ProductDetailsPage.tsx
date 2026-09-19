@@ -6,12 +6,12 @@ import {
   ChevronLeft, MessageCircle, Phone, FileText, Download, Share2, Printer,
   Copy, Package, Plus, Minus, ShieldCheck, Truck, Award, Sparkles, Mail, Clock,
   ChevronRight, X as CloseIcon, ZoomIn, Star, Heart, Repeat, CheckCircle2,
-  FileCheck, Droplets, Layers, Shield
+  FileCheck, Droplets, Layers, Shield, Maximize2, Gauge, Globe, Sliders, Check
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import FloatingActions from '@/components/FloatingActions';
-import { useProductBySlug, useProductImages, useProducts, useCategories, useProductsByIds } from '@/hooks/useSupabaseData';
+import { useProductBySlug, useProductImages, useProducts, useCategories, useProductsByIds, useSiteSettings } from '@/hooks/useSupabaseData';
 import { useQuoteCart } from '@/hooks/useQuoteCart';
 import { useRecentlyViewed } from '@/hooks/useRecentlyViewed';
 import { toast } from 'sonner';
@@ -24,19 +24,33 @@ const AVAIL: Record<string, string> = {
   out_of_stock: 'غير متوفر حالياً',
 };
 
-const DEFAULT_SIZES = ['20 مم', '25 مم', '32 مم', '40 مم', '50 مم', '63 مم', '110 مم', '160 مم'];
-const DEFAULT_PRESSURES = ['6 بار', '10 بار', '16 بار'];
 
-const SIZES_MATRIX = [
-  { size: '20', outer: '20.30', inner: '16.20', wall: '2.05', radius: '26', pressure: '16 بار' },
-  { size: '25', outer: '25.30', inner: '20.20', wall: '2.55', radius: '33', pressure: '16 بار' },
-  { size: '32', outer: '32.30', inner: '26.20', wall: '3.05', radius: '42', pressure: '16 بار' },
-  { size: '40', outer: '40.30', inner: '32.30', wall: '3.55', radius: '52', pressure: '16 بار' },
-  { size: '50', outer: '50.30', inner: '40.20', wall: '4.55', radius: '65', pressure: '16 بار' },
-  { size: '63', outer: '63.30', inner: '50.20', wall: '5.65', radius: '82', pressure: '16 بار' },
-  { size: '110', outer: '110.40', inner: '87.40', wall: '10.00', radius: '143', pressure: '16 بار' },
-  { size: '160', outer: '160.50', inner: '128.40', wall: '14.00', radius: '205', pressure: '16 بار' },
-];
+// Smart icon mapper for technical specifications
+const getSpecIcon = (label: string) => {
+  const l = (label || '').toLowerCase();
+  if (l.includes('طول') || l.includes('مسافة') || l.includes('قطر') || l.includes('سمك') || l.includes('عرض') || l.includes('ارتفاع') || l.includes('مقاس')) {
+    return <Maximize2 className="h-5 w-5 text-indigo-600" />;
+  }
+  if (l.includes('تصريف') || l.includes('مياه') || l.includes('تدفق') || l.includes('تنقيط') || l.includes('ري') || l.includes('سعة')) {
+    return <Droplets className="h-5 w-5 text-sky-600" />;
+  }
+  if (l.includes('ضغط') || l.includes('بار') || l.includes('تحمل') || l.includes('قدرة')) {
+    return <Gauge className="h-5 w-5 text-rose-600" />;
+  }
+  if (l.includes('خام') || l.includes('مادة') || l.includes('بولي') || l.includes('pvc') || l.includes('pe') || l.includes('طبقة')) {
+    return <Layers className="h-5 w-5 text-emerald-600" />;
+  }
+  if (l.includes('ضمان') || l.includes('شهادة') || l.includes('جودة') || l.includes('أمان')) {
+    return <ShieldCheck className="h-5 w-5 text-amber-600" />;
+  }
+  if (l.includes('منشأ') || l.includes('صنع') || l.includes('بلد') || l.includes('ماركة') || l.includes('شركة')) {
+    return <Globe className="h-5 w-5 text-teal-600" />;
+  }
+  if (l.includes('فلتر') || l.includes('مش') || l.includes('ميكرون') || l.includes('تنقية')) {
+    return <Sliders className="h-5 w-5 text-purple-600" />;
+  }
+  return <Sparkles className="h-5 w-5 text-emerald-600" />;
+};
 
 function Gallery({ images, title }: { images: string[]; title: string }) {
   const [active, setActive] = useState(0);
@@ -44,29 +58,34 @@ function Gallery({ images, title }: { images: string[]; title: string }) {
   const [zoomIdx, setZoomIdx] = useState(0);
 
   const openZoom = (i: number) => { setZoomIdx(i); setZoomOpen(true); };
+  const safeActive = active < images.length ? active : 0;
+  const currentImage = images[safeActive];
 
   return (
     <div className="space-y-4">
-      <div className="grid grid-cols-[80px_1fr] gap-4">
-        {/* Thumbnails list on far left */}
-        <div className="flex flex-col gap-2.5 overflow-y-auto max-h-[420px] pr-1">
-          {images.map((img, i) => (
-            <button
-              key={i}
-              onClick={() => setActive(i)}
-              className={`aspect-square overflow-hidden rounded-xl border-2 p-1 transition-all bg-card ${
-                i === active ? 'border-emerald-500 ring-2 ring-emerald-500/20 scale-105' : 'border-border opacity-70 hover:opacity-100'
-              }`}
-            >
-              <img src={img} alt="" className="h-full w-full object-contain rounded-lg" />
-            </button>
-          ))}
-        </div>
+      <div className={`grid ${images.length > 1 ? 'grid-cols-1 sm:grid-cols-[80px_1fr]' : 'grid-cols-1'} gap-4`}>
+        {/* Thumbnails list */}
+        {images.length > 1 && (
+          <div className="order-2 sm:order-1 flex sm:flex-col gap-2.5 overflow-x-auto sm:overflow-y-auto max-h-[440px] p-1">
+            {images.map((img, i) => (
+              <button
+                key={i}
+                type="button"
+                onClick={() => setActive(i)}
+                className={`h-16 w-16 sm:h-20 sm:w-20 shrink-0 aspect-square overflow-hidden rounded-xl border-2 p-1 transition-all bg-card/80 backdrop-blur-sm flex items-center justify-center cursor-pointer ${
+                  i === safeActive ? 'border-emerald-500 ring-2 ring-emerald-500/20 scale-105 shadow-sm' : 'border-border/80 opacity-70 hover:opacity-100'
+                }`}
+              >
+                <img src={img} alt="" className="max-h-full max-w-full object-contain rounded-lg" />
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Main View Container */}
         <div
-          className="group relative aspect-square w-full overflow-hidden rounded-3xl border border-border bg-gradient-to-b from-muted/20 to-card p-6 cursor-zoom-in shadow-card flex items-center justify-center"
-          onClick={() => openZoom(active)}
+          className="order-1 sm:order-2 group relative aspect-square w-full overflow-hidden rounded-3xl border border-border bg-gradient-to-b from-muted/20 to-card p-6 cursor-zoom-in shadow-card flex items-center justify-center"
+          onClick={() => currentImage && openZoom(safeActive)}
         >
           {/* Top Badges */}
           <div className="absolute top-4 inset-x-4 z-10 flex items-center justify-between pointer-events-none">
@@ -78,11 +97,11 @@ function Gallery({ images, title }: { images: string[]; title: string }) {
             </span>
           </div>
 
-          {images[active] ? (
+          {currentImage ? (
             <img
-              src={images[active]}
+              src={currentImage}
               alt={title}
-              className="relative z-0 max-h-full max-w-full object-contain drop-shadow-xl transition-transform duration-500 group-hover:scale-108"
+              className="relative z-0 max-h-full max-w-full object-contain drop-shadow-xl transition-transform duration-500 group-hover:scale-105"
             />
           ) : (
             <div className="flex h-full items-center justify-center text-muted-foreground/30">
@@ -90,12 +109,14 @@ function Gallery({ images, title }: { images: string[]; title: string }) {
             </div>
           )}
 
-          <button
-            onClick={(e) => { e.stopPropagation(); openZoom(active); }}
-            className="absolute bottom-4 left-4 z-10 inline-flex items-center gap-1.5 rounded-xl bg-card/90 backdrop-blur-md px-3 py-1.5 text-xs font-bold text-foreground border border-border/60 shadow-md opacity-0 group-hover:opacity-100 transition-all"
-          >
-            <ZoomIn className="h-3.5 w-3.5 text-primary" /> تكبير الصورة
-          </button>
+          {currentImage && (
+            <button
+              onClick={(e) => { e.stopPropagation(); openZoom(safeActive); }}
+              className="absolute bottom-4 left-4 z-10 inline-flex items-center gap-1.5 rounded-xl bg-card/90 backdrop-blur-md px-3 py-1.5 text-xs font-bold text-foreground border border-border/60 shadow-md opacity-0 group-hover:opacity-100 transition-all"
+            >
+              <ZoomIn className="h-3.5 w-3.5 text-primary" /> تكبير الصورة
+            </button>
+          )}
         </div>
       </div>
 
@@ -137,8 +158,17 @@ function Gallery({ images, title }: { images: string[]; title: string }) {
 }
 
 const ProductDetailsPage = () => {
-  const { slug } = useParams<{ slug: string }>();
+  const { slug: rawSlug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+
+  const slug = useMemo(() => {
+    if (!rawSlug) return '';
+    try {
+      return decodeURIComponent(rawSlug).trim();
+    } catch {
+      return rawSlug.trim();
+    }
+  }, [rawSlug]);
 
   // 1. Scroll to top immediately when slug changes or component mounts
   useEffect(() => {
@@ -149,13 +179,14 @@ const ProductDetailsPage = () => {
   const { data: allImages } = useProductImages(product?.id ?? '');
   const { data: categories } = useCategories();
   const { data: allProducts } = useProducts();
+  const { data: siteSettings } = useSiteSettings();
   const { add: addToQuote } = useQuoteCart();
   const { ids: recentIds, track } = useRecentlyViewed();
   const { data: recentProducts } = useProductsByIds(recentIds.filter((id) => id !== product?.id));
 
   const [qty, setQty] = useState(1);
-  const [selectedSize, setSelectedSize] = useState<string>('110 مم');
-  const [selectedPressure, setSelectedPressure] = useState<string>('16 بار');
+  const [selectedSize, setSelectedSize] = useState<string>('');
+  const [selectedPressure, setSelectedPressure] = useState<string>('');
   const [activeTab, setActiveTab] = useState<'specs' | 'sizes' | 'description' | 'applications' | 'files' | 'related'>('specs');
   const [isFavorite, setIsFavorite] = useState(false);
 
@@ -177,14 +208,139 @@ const ProductDetailsPage = () => {
     return list;
   }, [product, allImages]);
 
-  const availableSizes = useMemo(() => {
-    return (product?.sizes && product.sizes.length > 0) ? product.sizes : DEFAULT_SIZES;
+  // Modular Specs & Dimensions Matrix Parsing
+  const { technicalSpecs, sizesMatrix, hasMatrix } = useMemo(() => {
+    let tSpecs: Array<{ label: string; value: string }> = [];
+    let sMatrix: Array<{ size: string; outer: string; inner: string; wall: string; radius: string; pressure: string }> = [];
+    let matrixEnabled = false;
+
+    if (product?.specs) {
+      if (Array.isArray(product.specs)) {
+        tSpecs = product.specs
+          .map((item: any) => ({
+            label: item.label || item.key || item.name || '',
+            value: item.value || ''
+          }))
+          .filter(s => s.label || s.value);
+      } else if (typeof product.specs === 'object') {
+        if (Array.isArray(product.specs.technical_specs)) {
+          tSpecs = product.specs.technical_specs
+            .map((item: any) => ({
+              label: item.label || item.key || item.name || '',
+              value: item.value || ''
+            }))
+            .filter(s => s.label || s.value);
+        }
+        if (Array.isArray(product.specs.sizes_matrix) && product.specs.sizes_matrix.length > 0) {
+          sMatrix = product.specs.sizes_matrix.filter((r: any) => r && r.size);
+          matrixEnabled = Boolean(product.specs.has_matrix ?? (sMatrix.length > 0));
+        }
+      }
+    }
+
+    if (Array.isArray((product as any)?.technical_specs) && (product as any).technical_specs.length > 0) {
+      tSpecs = (product as any).technical_specs
+        .map((item: any) => ({
+          label: item.label || item.key || item.name || '',
+          value: item.value || ''
+        }))
+        .filter((s: any) => s.label || s.value);
+    }
+
+    if (Array.isArray((product as any)?.sizes_matrix) && (product as any).sizes_matrix.length > 0) {
+      sMatrix = (product as any).sizes_matrix.filter((r: any) => r && r.size);
+      matrixEnabled = true;
+    }
+
+    return {
+      technicalSpecs: tSpecs,
+      sizesMatrix: sMatrix,
+      hasMatrix: matrixEnabled && sMatrix.length > 0
+    };
   }, [product]);
+
+  // 1. Available Sizes
+  const availableSizes = useMemo(() => {
+    if (product?.sizes && product.sizes.length > 0) return product.sizes;
+    if (hasMatrix && sizesMatrix.length > 0) {
+      return sizesMatrix.map(m => m.size).filter(Boolean);
+    }
+    return [];
+  }, [product, hasMatrix, sizesMatrix]);
+
+  useEffect(() => {
+    if (availableSizes.length > 0 && !availableSizes.includes(selectedSize)) {
+      setSelectedSize(availableSizes[0]);
+    } else if (availableSizes.length === 0 && selectedSize !== '') {
+      setSelectedSize('');
+    }
+  }, [availableSizes, selectedSize]);
+
+  // 2. Available Pressures (strictly in Bar)
+  const availablePressures = useMemo(() => {
+    let pList: string[] = [];
+    if (product?.specs && typeof product.specs === 'object' && Array.isArray(product.specs.pressures)) {
+      pList = product.specs.pressures.filter(Boolean);
+    } else if (Array.isArray((product as any)?.pressures)) {
+      pList = (product as any).pressures.filter(Boolean);
+    }
+    if (pList.length === 0 && hasMatrix && sizesMatrix.length > 0) {
+      const fromMatrix = Array.from(new Set(sizesMatrix.map(m => m.pressure).filter(Boolean)));
+      if (fromMatrix.length > 0) pList = fromMatrix as string[];
+    }
+    return pList;
+  }, [product, hasMatrix, sizesMatrix]);
+
+  useEffect(() => {
+    if (availablePressures.length > 0 && !availablePressures.includes(selectedPressure)) {
+      setSelectedPressure(availablePressures[0]);
+    } else if (availablePressures.length === 0 && selectedPressure !== '') {
+      setSelectedPressure('');
+    }
+  }, [availablePressures, selectedPressure]);
+
+  // 3. Product Features (Dynamic with Green Badges)
+  const productFeatures = useMemo(() => {
+    let feats: string[] = [];
+    if (Array.isArray(product?.features)) {
+      feats = product.features
+        .map((f: any) => (typeof f === 'string' ? f : (f?.title || f?.name || f?.feature || '')))
+        .filter(Boolean);
+    } else if (product?.specs && typeof product.specs === 'object' && Array.isArray(product.specs.features)) {
+      feats = product.specs.features.filter(Boolean);
+    }
+    return feats;
+  }, [product]);
+
+  // 4. Product Applications
+  const productApplications = useMemo(() => {
+    if (Array.isArray(product?.applications) && product.applications.length > 0) {
+      return product.applications
+        .map((a: any) => (typeof a === 'string' ? a : (a?.title || a?.name || '')))
+        .filter(Boolean);
+    }
+    return [
+      'أنظمة الري بالتنقيط والري المحوري الحديثة',
+      'شبكات توزيع ونقل المياه الزراعية والصناعية',
+      'المزارع المكشوفة والبيوت المحمية',
+      'مشاريع استصلاح الأراضي والحدائق الكبرى',
+    ];
+  }, [product]);
+
+  // 5. WhatsApp Dynamic Pre-filled Inquiry Link with selected size & pressure
+  const whatsappNumber = siteSettings?.whatsapp || '201028200048';
+  const sku = product?.product_code || (product?.slug ? `SKU-${product.slug.toUpperCase()}` : (product?.id ? `SKU-${product.id.slice(0, 6)}` : ''));
+  const sizeText = selectedSize || 'حسب المتوفر';
+  const pressureText = selectedPressure || (availablePressures.length > 0 ? availablePressures[0] : 'قياسي');
+  const whatsappMessage = product
+    ? `السلام عليكم شركة آل شريف للري، أود الاستفسار وطلب عرض سعر بخصوص: ${product.title}${sku ? ` (كود: ${sku})` : ''} - مقاس: ${sizeText} - ضغط: ${pressureText}`
+    : '';
+  const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${encodeURIComponent(whatsappMessage)}`;
 
   const handleAddToQuote = () => {
     if (!product) return;
     addToQuote(
-      { id: product.id, title: product.title, slug: product.slug, image: product.image_url, brand: product.brand, product_code: product.product_code },
+      { id: product.id, title: product.title, slug: product.slug || product.id, image: product.image_url, brand: product.brand, product_code: product.product_code },
       qty
     );
     toast.success(`تمت إضافة ${qty} × ${product.title} إلى طلب عرض السعر`, {
@@ -234,19 +390,7 @@ const ProductDetailsPage = () => {
     );
   }
 
-  const specs = (product.specs || [
-    { label: 'المادة', value: 'PVC (بولي فينيل كلورايد)' },
-    { label: 'اللون', value: 'رمادي غامق' },
-    { label: 'زاوية الكوع', value: '90 درجة' },
-    { label: 'نوع التوصيل', value: 'ملحوم / لاصق' },
-    { label: 'الضغط الاسمي', value: 'حتى 16 بار' },
-    { label: 'درجة الحرارة', value: '0°C إلى 45°C' },
-    { label: 'المعيار', value: 'ISO 1452 / DIN 8063' },
-    { label: 'بلد المنشأ', value: 'تركيا / مصر' },
-    { label: 'الماركة', value: product.brand || 'آل شريف' },
-  ]) as Array<{ label: string; value: string }>;
-
-  const canonicalUrl = `https://alsherif-irrigation.lovable.app/product/${product.slug}`;
+  const canonicalUrl = `https://alsherif-irrigation.lovable.app/product/${encodeURIComponent(product.slug || product.id)}`;
 
   return (
     <div className="min-h-screen bg-background text-right" dir="rtl">
@@ -347,53 +491,74 @@ const ProductDetailsPage = () => {
                 <span className="text-muted-foreground">(تقييمات 128)</span>
               </div>
 
-              {/* Sizes Selection Pills */}
-              <div>
-                <div className="mb-2 flex items-center justify-between">
-                  <label className="text-xs font-extrabold text-foreground">المقاسات المتاحة:</label>
+              {/* Product Feature Badges (Green Checkmarks) */}
+              {productFeatures.length > 0 && (
+                <div className="flex flex-wrap gap-2 pt-1">
+                  {productFeatures.map((feat, idx) => (
+                    <span
+                      key={idx}
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-500/10 text-emerald-700 border border-emerald-500/25 px-3 py-1.5 text-xs font-bold shadow-2xs"
+                    >
+                      <Check className="h-3.5 w-3.5 text-emerald-600 shrink-0" />
+                      {feat}
+                    </span>
+                  ))}
                 </div>
-                <div className="flex flex-wrap gap-2">
-                  {availableSizes.map((sz: string) => {
-                    const isSelected = selectedSize === sz;
-                    return (
-                      <button
-                        key={sz}
-                        onClick={() => setSelectedSize(sz)}
-                        className={`rounded-xl px-4 py-2 text-xs font-bold transition-all border ${
-                          isSelected
-                            ? 'border-emerald-500 bg-emerald-500/10 text-emerald-600 ring-2 ring-emerald-500/20 shadow-sm'
-                            : 'border-border bg-card text-foreground hover:border-emerald-500/50'
-                        }`}
-                      >
-                        {sz}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
+              )}
 
-              {/* Pressure Selection Pills */}
-              <div>
-                <label className="mb-2 block text-xs font-extrabold text-foreground">الضغط:</label>
-                <div className="flex flex-wrap gap-2">
-                  {DEFAULT_PRESSURES.map((p) => {
-                    const isSelected = selectedPressure === p;
-                    return (
-                      <button
-                        key={p}
-                        onClick={() => setSelectedPressure(p)}
-                        className={`rounded-xl px-5 py-2 text-xs font-bold transition-all border ${
-                          isSelected
-                            ? 'border-emerald-500 bg-emerald-500/10 text-emerald-600 ring-2 ring-emerald-500/20 shadow-sm'
-                            : 'border-border bg-card text-foreground hover:border-emerald-500/50'
-                        }`}
-                      >
-                        {p}
-                      </button>
-                    );
-                  })}
+              {/* Sizes Selection Pills (Only rendered if sizes exist) */}
+              {availableSizes.length > 0 && (
+                <div>
+                  <div className="mb-2 flex items-center justify-between">
+                    <label className="text-xs font-extrabold text-foreground">المقاسات المتاحة:</label>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {availableSizes.map((sz: string) => {
+                      const isSelected = selectedSize === sz;
+                      return (
+                        <button
+                          key={sz}
+                          onClick={() => setSelectedSize(sz)}
+                          className={`rounded-xl px-4 py-2 text-xs font-bold transition-all border cursor-pointer ${
+                            isSelected
+                              ? 'border-emerald-500 bg-emerald-500/10 text-emerald-600 ring-2 ring-emerald-500/20 shadow-sm'
+                              : 'border-border bg-card text-foreground hover:border-emerald-500/50'
+                          }`}
+                        >
+                          {sz}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-              </div>
+              )}
+
+              {/* Pressure Selection Pills (Only rendered if pressures exist!) */}
+              {availablePressures.length > 0 && (
+                <div>
+                  <div className="mb-2 flex items-center justify-between">
+                    <label className="text-xs font-extrabold text-foreground">خيارات الضغط المتاحة (بار):</label>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {availablePressures.map((p) => {
+                      const isSelected = selectedPressure === p;
+                      return (
+                        <button
+                          key={p}
+                          onClick={() => setSelectedPressure(p)}
+                          className={`rounded-xl px-5 py-2 text-xs font-bold transition-all border cursor-pointer ${
+                            isSelected
+                              ? 'border-emerald-500 bg-emerald-500/10 text-emerald-600 ring-2 ring-emerald-500/20 shadow-sm'
+                              : 'border-border bg-card text-foreground hover:border-emerald-500/50'
+                          }`}
+                        >
+                          {p}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
 
               {/* Secondary Action Icons Row */}
               <div className="grid grid-cols-3 gap-2 pt-2">
@@ -421,13 +586,22 @@ const ProductDetailsPage = () => {
                 </button>
               </div>
 
-              {/* Main Primary Action Button (Navy/Deep Green full width) */}
-              <div className="pt-2">
+              {/* Primary Action Buttons: WhatsApp Quick Quote & Quote Cart */}
+              <div className="space-y-2.5 pt-2">
+                <a
+                  href={whatsappUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-[#25D366] hover:bg-[#20bd5a] text-white py-4 px-5 text-base font-black shadow-md transition-all duration-300 hover:scale-[1.01]"
+                >
+                  <MessageCircle className="h-5 w-5" /> طلب عرض سعر سريع عبر واتساب
+                </a>
+
                 <button
                   onClick={handleAddToQuote}
-                  className="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-[hsl(var(--sherif-blue-deep))] hover:bg-primary py-4 text-base font-extrabold text-white shadow-hero transition-all duration-300 hover:scale-[1.01]"
+                  className="w-full inline-flex items-center justify-center gap-2 rounded-2xl bg-[hsl(var(--sherif-blue-deep))] hover:bg-primary py-3.5 px-5 text-sm font-extrabold text-white shadow-hero transition-all duration-300 hover:scale-[1.01]"
                 >
-                  <FileText className="h-5 w-5" /> إضافة للطلب / استفسار سريـع
+                  <FileText className="h-5 w-5" /> إضافة للطلب / استفسار مخصص
                 </button>
               </div>
 
@@ -441,12 +615,12 @@ const ProductDetailsPage = () => {
         <div className="container">
           <div className="flex items-center justify-start gap-3 overflow-x-auto pb-3 border-b border-border/60">
             {[
-              { id: 'specs', label: 'المواصفات' },
-              { id: 'sizes', label: 'المقاسات' },
+              { id: 'specs', label: 'المواصفات الفنية' },
+              ...(hasMatrix && sizesMatrix.length > 0 ? [{ id: 'sizes', label: 'المقاسات والأبعاد' }] : []),
               { id: 'description', label: 'الوصف' },
               { id: 'applications', label: 'التطبيقات' },
-              { id: 'files', label: 'الملفات' },
-              { id: 'related', label: 'منتجات ذات صلة (128)' },
+              { id: 'files', label: 'الملفات والكتالوج' },
+              ...(related.length > 0 ? [{ id: 'related', label: `منتجات ذات صلة (${related.length})` }] : []),
             ].map((tab) => {
               const active = activeTab === tab.id;
               return (
@@ -469,87 +643,180 @@ const ProductDetailsPage = () => {
           {/* Tab Content Display */}
           <div className="mt-8">
             {activeTab === 'specs' && (
-              <div className="grid gap-8 lg:grid-cols-[1.5fr_1fr]">
-                {/* Available Sizes Detailed Matrix Table */}
-                <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-                  <h3 className="mb-4 text-base font-black text-foreground">المقاسات المتاحة (مم)</h3>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-center text-xs">
-                      <thead>
-                        <tr className="border-b border-border bg-muted/40 font-bold text-muted-foreground">
-                          <th className="p-3">المقاس</th>
-                          <th className="p-3">القطر الخارجي (D)</th>
-                          <th className="p-3">القطر الداخلي (d)</th>
-                          <th className="p-3">السمك (t)</th>
-                          <th className="p-3">نصف القطر (R)</th>
-                          <th className="p-3">الضغط</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-border">
-                        {SIZES_MATRIX.map((row, idx) => {
-                          const isCurrent = selectedSize.includes(row.size);
-                          return (
-                            <tr key={idx} className={`transition-colors ${isCurrent ? 'bg-emerald-500/10 font-bold text-emerald-700' : 'hover:bg-accent/40'}`}>
-                              <td className="p-3 font-bold">{row.size}</td>
-                              <td className="p-3">{row.outer}</td>
-                              <td className="p-3">{row.inner}</td>
-                              <td className="p-3">{row.wall}</td>
-                              <td className="p-3">{row.radius}</td>
-                              <td className="p-3">{row.pressure}</td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
-                  <p className="mt-3 text-[11px] text-muted-foreground text-center">جميع المقاسات بالمم - قد تختلف القيم بنسبة ±2%</p>
-                </div>
+              <div className="space-y-8">
+                {/* 1. Specifications Cards Grid (عرض مواصفات الخراطيم والأجهزة والمنتجات) */}
+                {technicalSpecs.length > 0 ? (
+                  <div className="rounded-2xl border border-border bg-card p-6 shadow-sm space-y-4">
+                    <div className="flex items-center justify-between border-b border-border/50 pb-3">
+                      <h3 className="text-base font-black text-foreground flex items-center gap-2">
+                        <Sparkles className="h-5 w-5 text-emerald-600" /> المواصفات والخصائص الفنية
+                      </h3>
+                      <span className="text-xs font-bold text-muted-foreground bg-accent/40 px-2.5 py-1 rounded-lg">
+                        {technicalSpecs.length} مواصفات
+                      </span>
+                    </div>
 
-                {/* Technical Specs Summary */}
-                <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-                  <h3 className="mb-4 text-base font-black text-foreground">المواصفات الفنية</h3>
-                  <table className="w-full text-xs">
-                    <tbody className="divide-y divide-border">
-                      {specs.map((s, idx) => (
-                        <tr key={idx} className="hover:bg-accent/20">
-                          <td className="py-2.5 text-muted-foreground font-semibold">{s.label}</td>
-                          <td className="py-2.5 text-left font-bold text-foreground">{s.value}</td>
-                        </tr>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3.5">
+                      {technicalSpecs.map((s, idx) => (
+                        <div
+                          key={idx}
+                          className="group flex items-start gap-3 rounded-2xl border border-border/80 bg-background/80 p-4 shadow-xs hover:border-emerald-500/50 hover:bg-card transition-all"
+                        >
+                          <div className="rounded-xl bg-accent/50 p-2.5 shrink-0 group-hover:scale-105 transition-transform">
+                            {getSpecIcon(s.label)}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <span className="block text-[11px] font-bold text-muted-foreground line-clamp-1">
+                              {s.label}
+                            </span>
+                            <span className="mt-1 block text-sm font-black text-foreground break-words">
+                              {s.value}
+                            </span>
+                          </div>
+                        </div>
                       ))}
-                    </tbody>
-                  </table>
-                </div>
+                    </div>
+                  </div>
+                ) : (
+                  /* If product has no technical specs and no matrix */
+                  !hasMatrix && (
+                    <div className="rounded-2xl border border-border bg-card p-8 text-center space-y-3">
+                      <FileText className="h-10 w-10 text-muted-foreground/40 mx-auto" />
+                      <h4 className="text-base font-bold text-foreground">المواصفات والبيانات الفنية</h4>
+                      <p className="text-xs text-muted-foreground max-w-md mx-auto">
+                        تواصل معنا مباشرة عبر واتساب للحصول على تفاصيل المواصفات والكتالوج الفني الكامل لهذا المنتج.
+                      </p>
+                      <a
+                        href={whatsappUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-2 rounded-xl bg-[#25D366] hover:bg-[#20bd5a] text-white px-5 py-2.5 text-xs font-bold transition-all shadow-sm"
+                      >
+                        <MessageCircle className="h-4 w-4" /> طلب المواصفات عبر واتساب
+                      </a>
+                    </div>
+                  )
+                )}
+
+                {/* 2. Conditional Dimensions Matrix Table (ONLY renders if product actually has matrix data) */}
+                {hasMatrix && sizesMatrix.length > 0 && (
+                  <div className="rounded-2xl border border-border bg-card p-6 shadow-sm space-y-4">
+                    <div className="flex items-center justify-between border-b border-border/50 pb-3">
+                      <h3 className="text-base font-black text-foreground flex items-center gap-2">
+                        <Layers className="h-5 w-5 text-indigo-600" /> جدول الأبعاد والمقاسات الهندسية (مم)
+                      </h3>
+                      <span className="text-[11px] text-muted-foreground bg-accent/30 px-2.5 py-1 rounded-lg">
+                        {sizesMatrix.length} مقاسات هندسية
+                      </span>
+                    </div>
+
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-center text-xs">
+                        <thead>
+                          <tr className="border-b border-border bg-muted/40 font-bold text-muted-foreground">
+                            <th className="p-3">المقاس</th>
+                            <th className="p-3">القطر الخارجي (D)</th>
+                            <th className="p-3">القطر الداخلي (d)</th>
+                            <th className="p-3">السمك (t)</th>
+                            <th className="p-3">نصف القطر (R)</th>
+                            <th className="p-3">الضغط</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border">
+                          {sizesMatrix.map((row, idx) => {
+                            const isCurrent = selectedSize.includes(row.size);
+                            return (
+                              <tr key={idx} className={`transition-colors ${isCurrent ? 'bg-emerald-500/10 font-bold text-emerald-700' : 'hover:bg-accent/40'}`}>
+                                <td className="p-3 font-bold">{row.size}</td>
+                                <td className="p-3">{row.outer || '—'}</td>
+                                <td className="p-3">{row.inner || '—'}</td>
+                                <td className="p-3">{row.wall || '—'}</td>
+                                <td className="p-3">{row.radius || '—'}</td>
+                                <td className="p-3">{row.pressure || '—'}</td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                    <p className="mt-3 text-[11px] text-muted-foreground text-center">جميع المقاسات بالمم - قد تختلف القيم بنسبة ±2%</p>
+                  </div>
+                )}
               </div>
             )}
 
             {activeTab !== 'specs' && (
               <div className="rounded-2xl border border-border bg-card p-8 text-sm text-muted-foreground leading-relaxed">
                 {activeTab === 'description' && (
-                  <p>{product.description || 'مصنوع من مادة PVC عالية الجودة لتحمل الضغط العالي والآكل، يستخدم في أنظمة الري الحديث وشبكات المياه الزراعية.'}</p>
+                  <p>{product.description || 'مصنوع من خامات عالية الجودة لتحمل ظروف التشغيل والضغط، يستخدم في أنظمة الري الحديث وشبكات المياه الزراعية.'}</p>
                 )}
                 {activeTab === 'sizes' && (
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-                    {DEFAULT_SIZES.map(s => (
-                      <div key={s} className="p-4 rounded-xl border border-border bg-accent/30 text-center font-bold text-foreground">
-                        {s}
-                      </div>
-                    ))}
-                  </div>
+                  hasMatrix && sizesMatrix.length > 0 ? (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-center text-xs">
+                        <thead>
+                          <tr className="border-b border-border bg-muted/40 font-bold text-muted-foreground">
+                            <th className="p-3">المقاس</th>
+                            <th className="p-3">القطر الخارجي (D)</th>
+                            <th className="p-3">القطر الداخلي (d)</th>
+                            <th className="p-3">السمك (t)</th>
+                            <th className="p-3">نصف القطر (R)</th>
+                            <th className="p-3">الضغط</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-border">
+                          {sizesMatrix.map((row, idx) => (
+                            <tr key={idx} className="hover:bg-accent/20">
+                              <td className="p-3 font-bold">{row.size}</td>
+                              <td className="p-3">{row.outer || '—'}</td>
+                              <td className="p-3">{row.inner || '—'}</td>
+                              <td className="p-3">{row.wall || '—'}</td>
+                              <td className="p-3">{row.radius || '—'}</td>
+                              <td className="p-3">{row.pressure || '—'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  ) : availableSizes.length > 0 ? (
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                      {availableSizes.map(s => (
+                        <div key={s} className="p-4 rounded-xl border border-border bg-accent/30 text-center font-bold text-foreground">
+                          {s}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-center">لا توجد مقاسات محددة لهذا المنتج.</p>
+                  )
                 )}
                 {activeTab === 'applications' && (
-                  <ul className="grid grid-cols-2 gap-3">
-                    {['أنظمة الري الحديث', 'شبكات المياه', 'الزراعة والبيوت المحمية', 'المشاريع الصناعية'].map(item => (
-                      <li key={item} className="flex items-center gap-2 p-3 rounded-xl border border-border bg-background font-bold text-foreground">
-                        <CheckCircle2 className="h-4 w-4 text-emerald-600" /> {item}
+                  <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    {productApplications.map(item => (
+                      <li key={item} className="flex items-center gap-2.5 p-3.5 rounded-xl border border-border bg-card font-bold text-foreground text-xs">
+                        <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" /> {item}
                       </li>
                     ))}
                   </ul>
                 )}
                 {activeTab === 'files' && (
-                  <p className="text-center">لا توجد ملفات مرفقة لهذا المنتج حالياً. تواصل معنا للحصول على الكتالوج الفني.</p>
+                  <p className="text-center text-xs text-muted-foreground py-6">
+                    {product?.pdf_url ? (
+                      <a
+                        href={product.pdf_url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-2 rounded-xl bg-primary text-primary-foreground px-4 py-2 font-bold text-xs hover:bg-primary/90"
+                      >
+                        <FileText className="h-4 w-4" /> تحميل الكتالوج الفني للمنتج (PDF) ↗
+                      </a>
+                    ) : (
+                      'لا توجد ملفات مرفقة لهذا المنتج حالياً. تواصل معنا للحصول على الكتالوج الفني.'
+                    )}
+                  </p>
                 )}
                 {activeTab === 'related' && (
-                  <p className="text-center">انظر قسم المنتجات ذات الصلة أسفل الصفحة.</p>
+                  <p className="text-center text-xs text-muted-foreground py-6">انظر قسم المنتجات ذات الصلة أسفل الصفحة.</p>
                 )}
               </div>
             )}
@@ -560,54 +827,63 @@ const ProductDetailsPage = () => {
       {/* Blueprint Diagram & Technical Features Row */}
       <section className="py-12">
         <div className="container">
-          <div className="grid gap-6 md:grid-cols-3">
+          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {/* Technical Diagram */}
             <div className="rounded-2xl border border-border bg-card p-6 shadow-sm text-center flex flex-col items-center justify-center">
-              <h4 className="mb-4 text-sm font-black text-foreground">الرسم الفني</h4>
-              <div className="relative aspect-square w-48 border border-dashed border-primary/30 rounded-xl bg-accent/20 p-4 flex items-center justify-center">
-                <Package className="h-20 w-20 text-primary/40" />
-                <span className="absolute bottom-2 text-[10px] text-muted-foreground font-mono">Drawing Code: #ERA-90-EL</span>
+              <h4 className="mb-4 text-sm font-black text-foreground flex items-center gap-2">
+                <Package className="h-4 w-4 text-primary" /> الرسم التخطيطي الفني
+              </h4>
+              <div className="relative aspect-square w-48 border border-dashed border-primary/30 rounded-xl bg-accent/20 p-4 flex items-center justify-center overflow-hidden">
+                {product?.drawing_url ? (
+                  <img src={product.drawing_url} alt="الرسم الفني" className="max-h-full max-w-full object-contain" />
+                ) : (
+                  <>
+                    <Package className="h-20 w-20 text-primary/40" />
+                    <span className="absolute bottom-2 text-[10px] text-muted-foreground font-mono">
+                      {product?.product_code || `#SKU-${product?.slug?.toUpperCase() || product?.id?.slice(0, 6)}`}
+                    </span>
+                  </>
+                )}
               </div>
             </div>
 
-            {/* Features List */}
-            <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-              <h4 className="mb-4 text-sm font-black text-foreground">المميزات</h4>
-              <ul className="space-y-3 text-xs font-semibold text-foreground">
-                {[
-                  'مصنوع من PVC عالي الجودة',
-                  'مقاوم للتآكل والمواد الكيميائية',
-                  'تحمل ضغط عالي حتى 16 بار',
-                  'سطح أملس لتقليل فقد الاحتكاك',
-                  'سهل التركيب والصيانة',
-                  'عمر افتراضي طويل',
-                ].map((feat, idx) => (
-                  <li key={idx} className="flex items-center gap-2">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
-                    <span>{feat}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            {/* Features List (Clean Green Badges) */}
+            {productFeatures.length > 0 && (
+              <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+                <h4 className="mb-4 text-sm font-black text-foreground flex items-center gap-2">
+                  <Sparkles className="h-4 w-4 text-purple-600" /> مميزات المنتج
+                </h4>
+                <ul className="space-y-3 text-xs font-semibold text-foreground">
+                  {productFeatures.map((feat, idx) => (
+                    <li key={idx} className="flex items-center gap-2.5">
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-600 border border-emerald-500/30">
+                        <Check className="h-3 w-3" />
+                      </span>
+                      <span>{feat}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             {/* Applications List */}
-            <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
-              <h4 className="mb-4 text-sm font-black text-foreground">التطبيقات</h4>
-              <ul className="space-y-3 text-xs font-semibold text-foreground">
-                {[
-                  'أنظمة الري الحديث',
-                  'شبكات المياه',
-                  'الزراعة والبيوت المحمية',
-                  'المشاريع الصناعية',
-                  'أنظمة الصرف الصحي',
-                ].map((app, idx) => (
-                  <li key={idx} className="flex items-center gap-2">
-                    <Droplets className="h-4 w-4 text-primary shrink-0" />
-                    <span>{app}</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
+            {productApplications.length > 0 && (
+              <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">
+                <h4 className="mb-4 text-sm font-black text-foreground flex items-center gap-2">
+                  <Droplets className="h-4 w-4 text-sky-600" /> التطبيقات والاستخدام
+                </h4>
+                <ul className="space-y-3 text-xs font-semibold text-foreground">
+                  {productApplications.map((app, idx) => (
+                    <li key={idx} className="flex items-center gap-2.5">
+                      <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-sky-500/10 text-sky-600 border border-sky-500/30">
+                        <Check className="h-3 w-3" />
+                      </span>
+                      <span>{app}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
         </div>
       </section>

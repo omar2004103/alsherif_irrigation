@@ -3,7 +3,8 @@ import { useQueryClient } from '@tanstack/react-query';
 import { 
   Plus, Edit, Trash2, Search, Star, Upload, X, Image as ImageIcon, 
   Check, Save, ArrowRight, CheckSquare, Layers, Tag, ShieldCheck,
-  Building2, DollarSign, Package, Globe, Eye, Sparkles, Sliders, FileText, FileDown
+  Building2, DollarSign, Package, Globe, Eye, Sparkles, Sliders, FileText, FileDown,
+  ListPlus, ToggleLeft, ToggleRight, CheckCircle2, Info, Loader2
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useProducts, useCategories, useBrands } from '@/hooks/useSupabaseData';
@@ -22,6 +23,19 @@ const COMMON_FEATURES = [
   'عمر افتراضي طويل', 'سطح أملس لتقليل الاحتكاك', 'تحمل كيميائي ممتاز'
 ];
 
+const SPEC_PRESETS = [
+  'طول اللفة / الرول',
+  'تصريف النقاطات',
+  'المسافة بين النقاطات',
+  'تحمل الضغط',
+  'نوع الخامة',
+  'قطر الخرطوم',
+  'سمك الجدار',
+  'معدل الفلترة',
+  'بلد المنشأ',
+  'فترة الضمان'
+];
+
 const DEFAULT_MATRIX = [
   { size: '20', outer: '20.30', inner: '16.20', wall: '2.05', radius: '26', pressure: '16 بار' },
   { size: '25', outer: '25.30', inner: '20.20', wall: '2.55', radius: '33', pressure: '16 بار' },
@@ -32,6 +46,31 @@ const DEFAULT_MATRIX = [
   { size: '110', outer: '110.40', inner: '87.40', wall: '10.00', radius: '143', pressure: '16 بار' },
   { size: '160', outer: '160.50', inner: '128.40', wall: '14.00', radius: '205', pressure: '16 بار' },
 ];
+
+const sanitizeSlug = (raw: string): string => {
+  return (raw || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^\w\u0600-\u06FF\s-]/g, '')
+    .replace(/\s+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-+|-+$/g, '');
+};
+
+const generateSlugFromText = (titleAr: string, titleEn?: string, skuOrId?: string): string => {
+  let base = (titleEn || '').trim().toLowerCase();
+  if (!base) {
+    base = (titleAr || '').trim().toLowerCase();
+  }
+
+  let clean = sanitizeSlug(base);
+  if (!clean) {
+    clean = 'product';
+  }
+
+  const suffix = (skuOrId || '').trim().replace(/[^a-zA-Z0-9]/g, '').slice(-5) || Math.random().toString(36).substring(2, 6);
+  return `${clean}-${suffix}`;
+};
 
 const AdminProducts = () => {
   const { toast } = useToast();
@@ -69,17 +108,25 @@ const AdminProducts = () => {
   const [drawingUrl, setDrawingUrl] = useState('');
   const [pdfUrl, setPdfUrl] = useState('');
   const [galleryImages, setGalleryImages] = useState<string[]>([]);
+  const [deletedImageUrls, setDeletedImageUrls] = useState<string[]>([]);
+  const [loadingGallery, setLoadingGallery] = useState(false);
+  const [customImageUrlInput, setCustomImageUrlInput] = useState('');
 
   // Specs, Sizes & Pressure
   const [selectedSizes, setSelectedSizes] = useState<string[]>(['20 مم', '25 مم', '32 مم', '110 مم', '160 مم']);
+  const [availablePressures, setAvailablePressures] = useState<string[]>(COMMON_PRESSURES);
   const [selectedPressures, setSelectedPressures] = useState<string[]>(['6 بار', '10 بار', '16 بار']);
   const [customSizeInput, setCustomSizeInput] = useState('');
-  const [customPressureInput, setCustomPressureInput] = useState('');
+  const [customPressureNumber, setCustomPressureNumber] = useState('');
   
-  // Specs Matrix Table
+  // Block A: Optional Dimensions Matrix Table (جدول الأبعاد والمقاسات الهندسية)
+  const [enableMatrix, setEnableMatrix] = useState(false);
   const [sizesMatrix, setSizesMatrix] = useState<Array<{ size: string; outer: string; inner: string; wall: string; radius: string; pressure: string }>>(DEFAULT_MATRIX);
   
-  // Technical Specs fields
+  // Block B: Dynamic Technical Specifications (المواصفات الفنية الحرة)
+  const [technicalSpecs, setTechnicalSpecs] = useState<Array<{ key: string; value: string }>>([]);
+
+  // Technical Specs fields (legacy/defaults)
   const [material, setMaterial] = useState('PVC');
   const [connectionType, setConnectionType] = useState('ملحوم / لاصق');
   const [sealMaterial, setSealMaterial] = useState('EPDM');
@@ -87,7 +134,8 @@ const AdminProducts = () => {
   const [origin, setOrigin] = useState('تركيا');
   const [warranty, setWarranty] = useState('سنة واحدة');
 
-  // Features Checklist
+  // Features Checklist (Dynamic Tags & Selection)
+  const [availableFeatures, setAvailableFeatures] = useState<string[]>(COMMON_FEATURES);
   const [selectedFeatures, setSelectedFeatures] = useState<string[]>([
     'مقاوم للصدأ', 'مقاوم للضغط العالي', 'تركيب سهل وسريع', 'عمر افتراضي طويل'
   ]);
@@ -124,16 +172,26 @@ const AdminProducts = () => {
     setDrawingUrl('');
     setPdfUrl('');
     setGalleryImages([]);
+    setDeletedImageUrls([]);
+    setLoadingGallery(false);
+    setCustomImageUrlInput('');
     setSelectedSizes(['20 مم', '25 مم', '32 مم', '110 مم', '160 مم']);
+    setAvailablePressures(COMMON_PRESSURES);
     setSelectedPressures(['6 بار', '10 بار', '16 بار']);
+    setCustomPressureNumber('');
+    setCustomSizeInput('');
+    setEnableMatrix(false);
     setSizesMatrix(DEFAULT_MATRIX);
+    setTechnicalSpecs([]);
     setMaterial('PVC');
     setConnectionType('ملحوم / لاصق');
     setSealMaterial('EPDM');
     setTemperature('0°C - 45°C');
     setOrigin('تركيا');
     setWarranty('سنة واحدة');
+    setAvailableFeatures(COMMON_FEATURES);
     setSelectedFeatures(['مقاوم للصدأ', 'مقاوم للضغط العالي', 'تركيب سهل وسريع', 'عمر افتراضي طويل']);
+    setCustomFeatureInput('');
     setStockQuantity('25');
     setMinStock('5');
     setWarehouse('المخزن الرئيسي');
@@ -172,16 +230,127 @@ const AdminProducts = () => {
     setImageUrl(p.image_url || '');
     setDrawingUrl(p.drawing_url || '');
     setPdfUrl(p.pdf_url || '');
+    setDeletedImageUrls([]);
+    setCustomImageUrlInput('');
+
+    // Pre-populate gallery with primary image and any attached p.images
+    const initialImages: string[] = [];
+    if (p.image_url) {
+      initialImages.push(p.image_url);
+    }
+    if (Array.isArray(p.images)) {
+      p.images.forEach((item: any) => {
+        const url = typeof item === 'string' ? item : item?.image_url;
+        if (url && !initialImages.includes(url)) {
+          initialImages.push(url);
+        }
+      });
+    }
+    setGalleryImages(initialImages);
+
+    // Fetch all product_images asynchronously from Supabase
+    if (p.id) {
+      setLoadingGallery(true);
+      supabase
+        .from('product_images')
+        .select('image_url, order')
+        .eq('product_id', p.id)
+        .order('order', { ascending: true })
+        .then(({ data, error }) => {
+          if (!error && data && data.length > 0) {
+            setGalleryImages(prev => {
+              const merged = [...prev];
+              data.forEach((row: any) => {
+                if (row.image_url && !merged.includes(row.image_url)) {
+                  merged.push(row.image_url);
+                }
+              });
+              return merged;
+            });
+            setImageUrl(current => current || data[0]?.image_url || '');
+          }
+        })
+        .catch(err => {
+          console.warn('Could not load product_images in edit mode:', err);
+        })
+        .finally(() => {
+          setLoadingGallery(false);
+        });
+    }
+
     setSelectedSizes(Array.isArray(p.sizes) ? p.sizes : ['20 مم', '25 مم', '32 مم', '110 مم', '160 مم']);
     setSelectedPressures(Array.isArray(p.pressures) ? p.pressures : ['6 بار', '10 بار', '16 بار']);
-    setSizesMatrix(Array.isArray(p.sizes_matrix) && p.sizes_matrix.length > 0 ? p.sizes_matrix : DEFAULT_MATRIX);
+
+    // Parse technical specs & matrix safely
+    let loadedSpecs: Array<{ key: string; value: string }> = [];
+    let loadedMatrix: any[] = [];
+    let hasMatrix = false;
+
+    if (p.specs) {
+      if (Array.isArray(p.specs)) {
+        loadedSpecs = p.specs.map((item: any) => ({
+          key: item.key || item.label || item.name || '',
+          value: item.value || ''
+        })).filter((s: any) => s.key || s.value);
+      } else if (typeof p.specs === 'object') {
+        if (Array.isArray(p.specs.technical_specs)) {
+          loadedSpecs = p.specs.technical_specs.map((item: any) => ({
+            key: item.key || item.label || item.name || '',
+            value: item.value || ''
+          })).filter((s: any) => s.key || s.value);
+        }
+        if (Array.isArray(p.specs.sizes_matrix) && p.specs.sizes_matrix.length > 0) {
+          loadedMatrix = p.specs.sizes_matrix;
+          hasMatrix = Boolean(p.specs.has_matrix ?? true);
+        }
+      }
+    }
+
+    if (Array.isArray(p.technical_specs) && p.technical_specs.length > 0) {
+      loadedSpecs = p.technical_specs.map((item: any) => ({
+        key: item.key || item.label || item.name || '',
+        value: item.value || ''
+      }));
+    }
+
+    if (Array.isArray(p.sizes_matrix) && p.sizes_matrix.length > 0) {
+      loadedMatrix = p.sizes_matrix;
+      hasMatrix = true;
+    }
+
+    setTechnicalSpecs(loadedSpecs);
+    setSizesMatrix(loadedMatrix.length > 0 ? loadedMatrix : DEFAULT_MATRIX);
+    setEnableMatrix(hasMatrix);
+
     setMaterial(p.material || 'PVC');
     setConnectionType(p.connection_type || 'ملحوم / لاصق');
     setSealMaterial(p.seal_material || 'EPDM');
     setTemperature(p.temperature || '0°C - 45°C');
     setOrigin(p.origin || 'تركيا');
     setWarranty(p.warranty || 'سنة واحدة');
-    setSelectedFeatures(Array.isArray(p.features) ? p.features.map((f: any) => typeof f === 'string' ? f : (f?.title || '')) : []);
+    // Load Pressures
+    let loadedPressures: string[] = [];
+    if (p.specs && typeof p.specs === 'object' && Array.isArray(p.specs.pressures)) {
+      loadedPressures = p.specs.pressures.filter(Boolean);
+    } else if (Array.isArray(p.pressures)) {
+      loadedPressures = p.pressures.filter(Boolean);
+    } else if (Array.isArray(loadedMatrix) && loadedMatrix.length > 0) {
+      const fromMatrix = Array.from(new Set(loadedMatrix.map((r: any) => r.pressure).filter(Boolean)));
+      if (fromMatrix.length > 0) loadedPressures = fromMatrix as string[];
+    }
+    setAvailablePressures(Array.from(new Set([...COMMON_PRESSURES, ...loadedPressures])));
+    setSelectedPressures(loadedPressures.length > 0 ? loadedPressures : ['6 بار', '10 بار', '16 بار']);
+    setCustomPressureNumber('');
+
+    // Load Features
+    const loadedFeatures = Array.isArray(p.features)
+      ? p.features.map((f: any) => typeof f === 'string' ? f : (f?.title || f?.name || f?.feature || '')).filter(Boolean)
+      : (p.specs && typeof p.specs === 'object' && Array.isArray(p.specs.features))
+        ? p.specs.features.filter(Boolean)
+        : [];
+    setAvailableFeatures(Array.from(new Set([...COMMON_FEATURES, ...loadedFeatures])));
+    setSelectedFeatures(loadedFeatures);
+    setCustomFeatureInput('');
     setStockQuantity(p.stock_quantity ? String(p.stock_quantity) : '25');
     setMinStock(p.min_stock ? String(p.min_stock) : '5');
     setWarehouse(p.warehouse || 'المخزن الرئيسي');
@@ -252,6 +421,35 @@ const AdminProducts = () => {
     }
   };
 
+  // Gallery Management Handlers
+  const handleRemoveGalleryImage = (imgToRemove: string) => {
+    setGalleryImages(prev => prev.filter(img => img !== imgToRemove));
+    setDeletedImageUrls(prev => (prev.includes(imgToRemove) ? prev : [...prev, imgToRemove]));
+
+    if (imageUrl === imgToRemove) {
+      const remaining = galleryImages.filter(img => img !== imgToRemove);
+      setImageUrl(remaining.length > 0 ? remaining[0] : '');
+    }
+  };
+
+  const handleSetPrimaryImage = (imgUrl: string) => {
+    setImageUrl(imgUrl);
+    toast({ title: 'تم تعيين الصورة كصورة رئيسية للمنتج ★' });
+  };
+
+  const handleAddCustomImageUrl = () => {
+    const url = customImageUrlInput.trim();
+    if (!url) return;
+    if (!galleryImages.includes(url)) {
+      setGalleryImages(prev => [...prev, url]);
+    }
+    if (!imageUrl) {
+      setImageUrl(url);
+    }
+    setCustomImageUrlInput('');
+    toast({ title: 'تمت إضافة رابط الصورة إلى المعرض 🖼️' });
+  };
+
   // Toggle Size selection
   const toggleSize = (sz: string) => {
     setSelectedSizes(prev => Array.isArray(prev) ? (prev.includes(sz) ? prev.filter(x => x !== sz) : [...prev, sz]) : [sz]);
@@ -264,19 +462,39 @@ const AdminProducts = () => {
     setCustomSizeInput('');
   };
 
-  // Toggle Pressure selection
+  // Toggle Pressure selection (Locked strictly to Bar)
   const togglePressure = (pr: string) => {
     setSelectedPressures(prev => Array.isArray(prev) ? (prev.includes(pr) ? prev.filter(x => x !== pr) : [...prev, pr]) : [pr]);
   };
 
   const addCustomPressure = () => {
-    if (!customPressureInput.trim()) return;
-    const val = customPressureInput.trim();
-    setSelectedPressures(prev => Array.isArray(prev) ? (prev.includes(val) ? prev : [...prev, val]) : [val]);
-    setCustomPressureInput('');
+    const raw = customPressureNumber.trim().replace(/[^\d.]/g, '');
+    if (!raw) return;
+    const formatted = `${raw} بار`;
+    setAvailablePressures(prev => (prev.includes(formatted) ? prev : [...prev, formatted]));
+    setSelectedPressures(prev => (prev.includes(formatted) ? prev : [...prev, formatted]));
+    setCustomPressureNumber('');
   };
 
-  // Matrix Row Handlers
+  const removePressureOption = (pr: string) => {
+    setAvailablePressures(prev => prev.filter(x => x !== pr));
+    setSelectedPressures(prev => prev.filter(x => x !== pr));
+  };
+
+  // Technical Specs Handlers (Block B)
+  const addTechnicalSpec = (key = '', value = '') => {
+    setTechnicalSpecs(prev => [...prev, { key, value }]);
+  };
+
+  const updateTechnicalSpec = (idx: number, field: 'key' | 'value', val: string) => {
+    setTechnicalSpecs(prev => prev.map((item, i) => i === idx ? { ...item, [field]: val } : item));
+  };
+
+  const removeTechnicalSpec = (idx: number) => {
+    setTechnicalSpecs(prev => prev.filter((_, i) => i !== idx));
+  };
+
+  // Matrix Row Handlers (Block A)
   const addMatrixRow = () => {
     setSizesMatrix(prev => Array.isArray(prev) ? [...prev, { size: '200', outer: '200.00', inner: '160.00', wall: '16.00', radius: '250', pressure: '16 بار' }] : DEFAULT_MATRIX);
   };
@@ -289,16 +507,22 @@ const AdminProducts = () => {
     setSizesMatrix(prev => Array.isArray(prev) ? prev.filter((_, i) => i !== idx) : []);
   };
 
-  // Toggle Feature selection
+  // Toggle Feature selection (Dynamic Tags & Selection)
   const toggleFeature = (feat: string) => {
     setSelectedFeatures(prev => Array.isArray(prev) ? (prev.includes(feat) ? prev.filter(x => x !== feat) : [...prev, feat]) : [feat]);
   };
 
   const addCustomFeature = () => {
-    if (!customFeatureInput.trim()) return;
     const val = customFeatureInput.trim();
-    setSelectedFeatures(prev => Array.isArray(prev) ? (prev.includes(val) ? prev : [...prev, val]) : [val]);
+    if (!val) return;
+    setAvailableFeatures(prev => (prev.includes(val) ? prev : [...prev, val]));
+    setSelectedFeatures(prev => (prev.includes(val) ? prev : [...prev, val]));
     setCustomFeatureInput('');
+  };
+
+  const removeFeatureOption = (feat: string) => {
+    setAvailableFeatures(prev => prev.filter(x => x !== feat));
+    setSelectedFeatures(prev => prev.filter(x => x !== feat));
   };
 
   // Save Product (Insert or Update)
@@ -308,43 +532,55 @@ const AdminProducts = () => {
       return;
     }
 
-    const generatedSlug = slug.trim() || title.trim().toLowerCase().replace(/\s+/g, '-').replace(/[^\w\u0600-\u06FF-]/g, '');
+    // Generate safe slug
+    let generatedSlug = slug.trim() ? sanitizeSlug(slug) : '';
+    if (!generatedSlug) {
+      generatedSlug = generateSlugFromText(title, titleEn, productCode || editingProduct?.id);
+    }
+    if (!generatedSlug) {
+      generatedSlug = `product-${Date.now().toString().slice(-6)}`;
+    }
+
+    const filteredSpecs = technicalSpecs
+      .map(s => ({ key: s.key.trim(), value: s.value.trim() }))
+      .filter(s => s.key || s.value);
+
+    const filteredMatrix = enableMatrix
+      ? sizesMatrix
+          .map(r => ({
+            size: (r.size || '').trim(),
+            outer: (r.outer || '').trim(),
+            inner: (r.inner || '').trim(),
+            wall: (r.wall || '').trim(),
+            radius: (r.radius || '').trim(),
+            pressure: (r.pressure || '').trim()
+          }))
+          .filter(r => r.size)
+      : [];
+
+    const specsPayload = {
+      technical_specs: filteredSpecs,
+      sizes_matrix: filteredMatrix,
+      has_matrix: enableMatrix && filteredMatrix.length > 0,
+      pressures: selectedPressures,
+      features: selectedFeatures,
+    };
 
     const payload: any = {
       title: title.trim(),
-      title_en: titleEn.trim() || null,
       slug: generatedSlug,
       description: description.trim() || title.trim(),
-      full_description: fullDescription.trim() || description.trim(),
       category_id: categoryId || null,
-      subcategory: subCategory.trim() || null,
-      brand: brandName.trim() || 'ERA',
-      model_number: modelNumber.trim() || null,
+      brand: brandName.trim() || 'ال شريف',
       product_code: productCode.trim() || `SKU-${Date.now().toString().slice(-6)}`,
-      barcode: barcode.trim() || null,
       image_url: imageUrl || (galleryImages[0] || null),
-      drawing_url: drawingUrl || null,
-      pdf_url: pdfUrl || null,
-      sizes: selectedSizes,
-      pressures: selectedPressures,
-      sizes_matrix: sizesMatrix,
-      material: material,
-      connection_type: connectionType,
-      seal_material: sealMaterial,
-      temperature: temperature,
-      origin: origin,
-      warranty: warranty,
-      features: (selectedFeatures || []).map(f => ({ title: f })),
-      stock_quantity: parseInt(stockQuantity, 10) || 0,
-      min_stock: parseInt(minStock, 10) || 5,
-      warehouse: warehouse,
       availability: availability,
+      featured: featured,
+      sizes: selectedSizes,
+      features: (selectedFeatures || []).map(f => ({ title: f })),
+      specs: specsPayload,
       meta_title: metaTitle.trim() || title.trim(),
       meta_description: metaDescription.trim() || description.trim(),
-      show_on_site: showOnSite,
-      featured: featured,
-      latest_products: latestProducts,
-      show_in_hero: showInHero,
       updated_at: new Date().toISOString(),
     };
 
@@ -352,7 +588,7 @@ const AdminProducts = () => {
       if (editingProduct) {
         let { error } = await supabase.from('products').update(payload).eq('id', editingProduct.id);
         if (error) {
-          console.warn('Extended update failed, falling back to core payload:', error);
+          console.warn('Update failed, retrying with core payload:', error);
           const corePayload = {
             title: payload.title,
             slug: payload.slug,
@@ -362,16 +598,73 @@ const AdminProducts = () => {
             image_url: payload.image_url,
             availability: payload.availability,
             featured: payload.featured,
+            specs: payload.specs,
+            sizes: payload.sizes,
+            features: payload.features,
             updated_at: payload.updated_at,
           };
           const res = await supabase.from('products').update(corePayload).eq('id', editingProduct.id);
           if (res.error) throw res.error;
         }
-        toast({ title: 'تم تحديث البيانات بنجاح ✨' });
+
+        // 1. Delete removed images from product_images table
+        if (deletedImageUrls.length > 0) {
+          try {
+            await supabase
+              .from('product_images')
+              .delete()
+              .eq('product_id', editingProduct.id)
+              .in('image_url', deletedImageUrls);
+          } catch (delErr) {
+            console.warn('Failed to delete removed product_images:', delErr);
+          }
+        }
+
+        // 2. Sync newly added gallery images to product_images table
+        try {
+          const { data: existingRows } = await supabase
+            .from('product_images')
+            .select('image_url')
+            .eq('product_id', editingProduct.id);
+
+          const existingUrls = new Set((existingRows || []).map((r: any) => r.image_url));
+          const newImages = galleryImages
+            .filter(url => url && !existingUrls.has(url))
+            .map((url, idx) => ({
+              product_id: editingProduct.id,
+              image_url: url,
+              order: (existingRows?.length || 0) + idx,
+            }));
+
+          if (newImages.length > 0) {
+            await supabase.from('product_images').insert(newImages);
+          }
+        } catch (syncErr) {
+          console.warn('Failed to sync product_images on edit:', syncErr);
+        }
+
+        queryClient.invalidateQueries({ queryKey: ['product_images', editingProduct.id] });
+        queryClient.invalidateQueries({ queryKey: ['all_product_images'] });
+
+        const savedSlug = payload.slug || editingProduct?.slug || editingProduct?.id;
+        toast({
+          title: 'تم تحديث بيانات المنتج بنجاح ✨',
+          description: `الرابط: /product/${savedSlug}`,
+          action: (
+            <a
+              href={`/product/${encodeURIComponent(savedSlug)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 rounded bg-primary px-2.5 py-1 text-xs font-bold text-primary-foreground hover:opacity-90"
+            >
+              معاينة بالمتجر ↗
+            </a>
+          ) as any,
+        });
       } else {
         let { data, error } = await supabase.from('products').insert([payload]).select().single();
         if (error) {
-          console.warn('Extended insert failed, falling back to core payload:', error);
+          console.warn('Insert failed, retrying with core payload:', error);
           const corePayload = {
             title: payload.title,
             slug: payload.slug,
@@ -381,6 +674,9 @@ const AdminProducts = () => {
             image_url: payload.image_url,
             availability: payload.availability,
             featured: payload.featured,
+            specs: payload.specs,
+            sizes: payload.sizes,
+            features: payload.features,
           };
           const res = await supabase.from('products').insert([corePayload]).select().single();
           if (res.error) throw res.error;
@@ -392,11 +688,25 @@ const AdminProducts = () => {
           const imageRows = galleryImages.map((url, idx) => ({
             product_id: data.id,
             image_url: url,
-            is_primary: idx === 0,
+            order: idx,
           }));
           await supabase.from('product_images').insert(imageRows);
         }
-        toast({ title: 'تم إضافة المنتج بنجاح 🎉' });
+        const savedSlug = payload.slug || data?.slug || data?.id;
+        toast({
+          title: 'تمت إضافة المنتج بنجاح 🎉',
+          description: `الرابط: /product/${savedSlug}`,
+          action: (
+            <a
+              href={`/product/${encodeURIComponent(savedSlug)}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 rounded bg-primary px-2.5 py-1 text-xs font-bold text-primary-foreground hover:opacity-90"
+            >
+              معاينة بالمتجر ↗
+            </a>
+          ) as any,
+        });
       }
 
       queryClient.invalidateQueries({ queryKey: ['products'] });
@@ -438,8 +748,10 @@ const AdminProducts = () => {
   const safeGalleryImages = Array.isArray(galleryImages) ? galleryImages : [];
   const safeSelectedSizes = Array.isArray(selectedSizes) ? selectedSizes : [];
   const safeSelectedPressures = Array.isArray(selectedPressures) ? selectedPressures : [];
+  const safeAvailablePressures = Array.isArray(availablePressures) ? availablePressures : COMMON_PRESSURES;
   const safeSizesMatrix = Array.isArray(sizesMatrix) ? sizesMatrix : DEFAULT_MATRIX;
   const safeSelectedFeatures = Array.isArray(selectedFeatures) ? selectedFeatures : [];
+  const safeAvailableFeatures = Array.isArray(availableFeatures) ? availableFeatures : COMMON_FEATURES;
 
   return (
     <div className="space-y-6 text-right" dir="rtl">
@@ -462,6 +774,17 @@ const AdminProducts = () => {
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
+              {editingProduct && (
+                <a
+                  href={`/product/${encodeURIComponent(editingProduct.slug || editingProduct.id)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-primary/40 text-primary bg-primary/10 px-4 py-2.5 text-xs font-bold hover:bg-primary hover:text-white transition-all cursor-pointer"
+                >
+                  <Eye className="h-4 w-4" /> معاينة بالمتجر ↗
+                </a>
+              )}
+
               <button
                 type="button"
                 onClick={() => handleSave(false)}
@@ -500,45 +823,106 @@ const AdminProducts = () => {
                   <div className="flex items-center gap-2 text-primary font-bold text-sm">
                     <ImageIcon className="h-4 w-4" /> صور المنتج والمعرض
                   </div>
-                  <span className="text-[11px] text-muted-foreground">حتى 10 صور</span>
+                  {loadingGallery ? (
+                    <span className="flex items-center gap-1.5 text-[11px] text-primary font-bold animate-pulse">
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" /> جاري تحميل الصور...
+                    </span>
+                  ) : (
+                    <span className="text-[11px] text-muted-foreground">({safeGalleryImages.length} صور)</span>
+                  )}
                 </div>
 
                 {/* Dropzone */}
                 <div className="relative rounded-2xl border-2 border-dashed border-border bg-accent/20 p-6 text-center hover:border-primary/50 transition-colors">
                   <input type="file" accept="image/*" multiple onChange={handleGalleryUpload} className="absolute inset-0 opacity-0 cursor-pointer" />
                   <Upload className="mx-auto h-8 w-8 text-primary/70 mb-2" />
-                  <p className="text-xs font-bold text-foreground">اضغط لرفع الصور</p>
-                  <p className="text-[10px] text-muted-foreground mt-1">أو اسحب الصور وأفلتها هنا (JPG, PNG)</p>
+                  <p className="text-xs font-bold text-foreground">اضغط لرفع الصور من جهازك</p>
+                  <p className="text-[10px] text-muted-foreground mt-1">أو اسحب الصور وأفلتها هنا (JPG, PNG, WebP)</p>
+                </div>
+
+                {/* URL Input Bar */}
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={customImageUrlInput}
+                    onChange={e => setCustomImageUrlInput(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleAddCustomImageUrl(); } }}
+                    placeholder="أو أضف رابط صورة مباشر (URL)..."
+                    className="flex-1 rounded-xl border border-input bg-background px-3 py-2 text-xs outline-none focus:ring-1 focus:ring-primary"
+                    dir="ltr"
+                  />
+                  <button
+                    type="button"
+                    onClick={handleAddCustomImageUrl}
+                    className="shrink-0 rounded-xl bg-accent border border-border px-3 py-2 text-xs font-bold hover:bg-primary hover:text-white transition-colors cursor-pointer"
+                  >
+                    + إضافة
+                  </button>
                 </div>
 
                 {/* Image Thumbnails Grid */}
-                <div className="grid grid-cols-4 gap-2.5">
-                  {safeGalleryImages.map((img, i) => (
-                    <div key={i} className={`group relative aspect-square rounded-xl border overflow-hidden bg-card p-1 ${imageUrl === img ? 'border-emerald-500 ring-2 ring-emerald-500/20' : 'border-border'}`}>
-                      <img src={img} alt="" className="h-full w-full object-contain" />
-                      <button
-                        type="button"
-                        onClick={() => setGalleryImages(safeGalleryImages.filter((_, idx) => idx !== i))}
-                        className="absolute top-1 left-1 rounded-full bg-rose-600 p-1 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  {safeGalleryImages.map((img, i) => {
+                    const isPrimary = (imageUrl === img) || (!imageUrl && i === 0);
+                    return (
+                      <div
+                        key={i}
+                        className={`group relative aspect-square rounded-2xl border-2 overflow-hidden bg-muted/30 p-2 flex items-center justify-center transition-all ${
+                          isPrimary
+                            ? 'border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-500/5 shadow-sm'
+                            : 'border-border/80 hover:border-primary/50'
+                        }`}
                       >
-                        <X className="h-3 w-3" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setImageUrl(img)}
-                        className={`absolute bottom-1 right-1 rounded-md px-1.5 py-0.5 text-[9px] font-bold ${imageUrl === img ? 'bg-emerald-600 text-white' : 'bg-black/60 text-white opacity-0 group-hover:opacity-100'}`}
-                      >
-                        رئيسية
-                      </button>
-                    </div>
-                  ))}
-                  <label htmlFor="add-single-img" className="aspect-square rounded-xl border border-dashed border-border bg-accent/30 hover:bg-accent flex flex-col items-center justify-center cursor-pointer text-muted-foreground text-xs font-bold gap-1">
-                    <Plus className="h-5 w-5" />
-                    <span>إضافة صورة</span>
+                        {/* Image element with object-contain */}
+                        <img
+                          src={img}
+                          alt={`Product thumbnail ${i + 1}`}
+                          className="max-h-full max-w-full object-contain rounded-lg drop-shadow-sm transition-transform duration-300 group-hover:scale-105"
+                        />
+
+                        {/* Top-left Delete Button */}
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveGalleryImage(img)}
+                          title="حذف هذه الصورة"
+                          className="absolute top-2 left-2 z-10 flex h-7 w-7 items-center justify-center rounded-lg bg-rose-600 text-white shadow-md hover:bg-rose-700 transition-transform active:scale-95 cursor-pointer"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+
+                        {/* Primary Badge or Action Button */}
+                        {isPrimary ? (
+                          <div className="absolute bottom-2 inset-x-2 z-10 flex items-center justify-center gap-1 rounded-md bg-emerald-600/95 backdrop-blur-sm py-1 text-[10px] font-black text-white shadow-sm">
+                            <Star className="h-3 w-3 fill-current" />
+                            <span>رئيسية</span>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleSetPrimaryImage(img)}
+                            className="absolute bottom-2 inset-x-2 z-10 flex items-center justify-center gap-1 rounded-md bg-black/75 backdrop-blur-sm py-1 text-[10px] font-bold text-white shadow-sm hover:bg-emerald-600 transition-all opacity-95 sm:opacity-0 sm:group-hover:opacity-100 cursor-pointer"
+                          >
+                            <span>تعيين كرئيسية</span>
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+
+                  {/* Add Single Image Box */}
+                  <label
+                    htmlFor="add-single-img"
+                    className="aspect-square rounded-2xl border-2 border-dashed border-border bg-accent/20 hover:bg-accent/40 hover:border-primary/50 flex flex-col items-center justify-center cursor-pointer text-muted-foreground text-xs font-bold gap-1.5 transition-colors p-2 text-center"
+                  >
+                    <Plus className="h-6 w-6 text-primary" />
+                    <span>إضافة صورة أخرى</span>
                     <input type="file" accept="image/*" onChange={handleImageUpload} id="add-single-img" className="hidden" />
                   </label>
                 </div>
-                <p className="text-[10px] text-muted-foreground text-center">* انقر على أي صورة لتحديدها كصورة رئيسية للمنتج</p>
+
+                <p className="text-[10px] text-muted-foreground text-center">
+                  * انقر على "تعيين كرئيسية" لتحديد الصورة البارزة في المتجر وبطاقات المنتجات.
+                </p>
               </div>
 
               {/* Card 2: الرسم الفني (Technical Blueprint Diagram) */}
@@ -725,73 +1109,270 @@ const AdminProducts = () => {
                   </div>
                 </div>
 
-                {/* Pressures Selector Pills */}
-                <div className="space-y-2 border-t border-border/40 pt-3">
-                  <label className="block text-xs font-bold text-foreground">خيارات الضغط المتاحة (* انقر للتفعيل):</label>
+                {/* Pressures Selector Pills (Locked strictly to Bar) */}
+                <div className="space-y-2.5 border-t border-border/40 pt-3">
+                  <div className="flex items-center justify-between">
+                    <label className="block text-xs font-bold text-foreground">
+                      خيارات الضغط المتاحة بوحدة البار (* انقر للتفعيل):
+                    </label>
+                    <span className="text-[10px] text-muted-foreground">الوحدة المعتمدة: بار (Bar)</span>
+                  </div>
+
                   <div className="flex flex-wrap gap-2">
-                    {COMMON_PRESSURES.map(pr => {
+                    {safeAvailablePressures.map(pr => {
                       const isSelected = safeSelectedPressures.includes(pr);
+                      const isCustom = !COMMON_PRESSURES.includes(pr);
                       return (
-                        <button
-                          key={pr}
-                          type="button"
-                          onClick={() => togglePressure(pr)}
-                          className={`rounded-xl px-4 py-1.5 text-xs font-bold transition-all border ${
-                            isSelected ? 'border-emerald-500 bg-emerald-500/10 text-emerald-600 ring-2 ring-emerald-500/20' : 'border-border bg-accent/20 text-muted-foreground hover:bg-accent'
-                          }`}
-                        >
-                          {pr} {isSelected ? '✓' : ''}
-                        </button>
+                        <div key={pr} className="relative inline-flex items-center group">
+                          <button
+                            type="button"
+                            onClick={() => togglePressure(pr)}
+                            className={`rounded-xl px-4 py-1.5 text-xs font-bold transition-all border cursor-pointer ${
+                              isSelected
+                                ? 'border-emerald-500 bg-emerald-500/10 text-emerald-600 ring-2 ring-emerald-500/20 shadow-xs'
+                                : 'border-border bg-accent/20 text-muted-foreground hover:bg-accent'
+                            }`}
+                          >
+                            {pr} {isSelected ? '✓' : ''}
+                          </button>
+                          {isCustom && (
+                            <button
+                              type="button"
+                              onClick={(e) => { e.stopPropagation(); removePressureOption(pr); }}
+                              className="absolute -top-1.5 -left-1.5 h-4 w-4 rounded-full bg-rose-500 text-white text-[10px] flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity shadow cursor-pointer"
+                              title="حذف هذا الخيار"
+                            >
+                              ×
+                            </button>
+                          )}
+                        </div>
                       );
                     })}
+                  </div>
+
+                  {/* Add Pressure by Number only */}
+                  <div className="flex items-center gap-2 pt-1 max-w-sm">
+                    <div className="relative flex-1">
+                      <input
+                        type="number"
+                        step="any"
+                        min="0"
+                        value={customPressureNumber}
+                        onChange={e => setCustomPressureNumber(e.target.value)}
+                        onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addCustomPressure(); } }}
+                        placeholder="أدخل قيمة الضغط كرقم (مثال: 4 أو 8)..."
+                        className="w-full rounded-xl border border-input bg-background pl-14 pr-3 py-2 text-xs outline-none focus:border-primary font-bold"
+                        dir="ltr"
+                      />
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-black text-emerald-600 pointer-events-none">
+                        بار
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={addCustomPressure}
+                      className="rounded-xl bg-accent border border-border px-4 py-2 text-xs font-bold text-foreground hover:bg-emerald-600 hover:text-white transition-colors cursor-pointer shrink-0"
+                    >
+                      + إضافة ضغط
+                    </button>
                   </div>
                 </div>
 
               </div>
 
-              {/* Card 7: جدول المقاسات الفنية التفصيلي (Matrix Table Editor) */}
+              {/* Modular Block B: المواصفات الفنية الحرة (Dynamic Technical Specifications) */}
               <div className="rounded-2xl border border-border bg-card p-5 shadow-sm space-y-4">
-                <div className="flex items-center justify-between border-b border-border/50 pb-3">
-                  <div className="flex items-center gap-2 text-indigo-600 font-bold text-sm">
-                    <Layers className="h-4 w-4" /> جدول المقاسات الفنية التفصيلي (Dimensions Matrix Table)
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-border/50 pb-3">
+                  <div>
+                    <div className="flex items-center gap-2 text-primary font-bold text-sm">
+                      <ListPlus className="h-4 w-4" /> المواصفات الفنية الحرة (Dynamic Technical Specifications)
+                    </div>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                      مناسب لخراطيم الري بالتنقيط، الفلاتر، الرشاشات، الطلمبات، وكافة المعدات
+                    </p>
                   </div>
-                  <button type="button" onClick={addMatrixRow} className="rounded-xl bg-primary px-3 py-1.5 text-xs font-bold text-white shadow hover:bg-primary/90">
-                    + إضافة صف جديد
+                  <button
+                    type="button"
+                    onClick={() => addTechnicalSpec('', '')}
+                    className="inline-flex items-center justify-center gap-1.5 rounded-xl bg-primary px-3.5 py-1.5 text-xs font-bold text-white shadow hover:bg-primary/90 transition-all cursor-pointer self-start sm:self-auto"
+                  >
+                    <Plus className="h-4 w-4" /> إضافة مواصفة فنية
                   </button>
                 </div>
 
-                <div className="overflow-x-auto">
-                  <table className="w-full text-center text-xs">
-                    <thead>
-                      <tr className="border-b border-border bg-muted/40 font-bold text-muted-foreground">
-                        <th className="p-2">المقاس</th>
-                        <th className="p-2">القطر الخارجي (D)</th>
-                        <th className="p-2">القطر الداخلي (d)</th>
-                        <th className="p-2">السمك (t)</th>
-                        <th className="p-2">نصف القطر (R)</th>
-                        <th className="p-2">الضغط</th>
-                        <th className="p-2">إجراء</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-border">
-                      {safeSizesMatrix.map((row, idx) => (
-                        <tr key={idx}>
-                          <td className="p-1"><input type="text" value={row.size || ''} onChange={e => updateMatrixRow(idx, 'size', e.target.value)} className="w-16 rounded border bg-background p-1 text-center font-bold" /></td>
-                          <td className="p-1"><input type="text" value={row.outer || ''} onChange={e => updateMatrixRow(idx, 'outer', e.target.value)} className="w-20 rounded border bg-background p-1 text-center" /></td>
-                          <td className="p-1"><input type="text" value={row.inner || ''} onChange={e => updateMatrixRow(idx, 'inner', e.target.value)} className="w-20 rounded border bg-background p-1 text-center" /></td>
-                          <td className="p-1"><input type="text" value={row.wall || ''} onChange={e => updateMatrixRow(idx, 'wall', e.target.value)} className="w-16 rounded border bg-background p-1 text-center" /></td>
-                          <td className="p-1"><input type="text" value={row.radius || ''} onChange={e => updateMatrixRow(idx, 'radius', e.target.value)} className="w-16 rounded border bg-background p-1 text-center" /></td>
-                          <td className="p-1"><input type="text" value={row.pressure || ''} onChange={e => updateMatrixRow(idx, 'pressure', e.target.value)} className="w-20 rounded border bg-background p-1 text-center" /></td>
-                          <td className="p-1">
-                            <button type="button" onClick={() => removeMatrixRow(idx)} className="rounded p-1 text-rose-600 hover:bg-rose-50">
+                {/* Quick Presets Bar */}
+                <div className="space-y-1.5 bg-accent/20 p-3 rounded-xl border border-border/50">
+                  <span className="block text-[11px] font-bold text-muted-foreground">
+                    ⚡ إضافة سريعة لمواصفات شائعة (انقر للإضافة):
+                  </span>
+                  <div className="flex flex-wrap gap-1.5">
+                    {SPEC_PRESETS.map(preset => (
+                      <button
+                        key={preset}
+                        type="button"
+                        onClick={() => addTechnicalSpec(preset, '')}
+                        className="rounded-lg border border-border/80 bg-card hover:bg-primary hover:text-white px-2.5 py-1 text-[11px] font-medium text-foreground transition-all cursor-pointer shadow-xs"
+                      >
+                        + {preset}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Dynamic Repeater List */}
+                {technicalSpecs.length === 0 ? (
+                  <div className="rounded-xl border border-dashed border-border/80 bg-accent/10 p-6 text-center space-y-2">
+                    <ListPlus className="mx-auto h-8 w-8 text-muted-foreground/40" />
+                    <p className="text-xs font-bold text-foreground">لا توجد مواصفات فنية مضافة حالياً</p>
+                    <p className="text-[11px] text-muted-foreground max-w-md mx-auto">
+                      يمكنك إضافة مواصفات مثل: طول اللفة، تصريف النقاطات، المسافة بين النقاطات، تحمل الضغط، نوع الخامة، إلخ.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => addTechnicalSpec('', '')}
+                      className="inline-flex items-center gap-1 rounded-xl bg-accent border border-border px-3.5 py-1.5 text-xs font-bold text-foreground hover:bg-primary hover:text-white transition-all cursor-pointer"
+                    >
+                      <Plus className="h-3.5 w-3.5" /> إضافة أول مواصفة
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    <div className="hidden sm:grid sm:grid-cols-[1fr_1.2fr_auto] gap-2 px-2 text-[11px] font-bold text-muted-foreground">
+                      <span>اسم الخاصية</span>
+                      <span>القيمة</span>
+                      <span className="w-8 text-center">إجراء</span>
+                    </div>
+
+                    <div className="space-y-2 max-h-[360px] overflow-y-auto pr-1">
+                      {technicalSpecs.map((spec, idx) => (
+                        <div
+                          key={idx}
+                          className="flex flex-col sm:grid sm:grid-cols-[1fr_1.2fr_auto] gap-2 p-2 rounded-xl border border-border bg-accent/10 hover:border-primary/40 transition-colors"
+                        >
+                          <div>
+                            <input
+                              type="text"
+                              value={spec.key}
+                              onChange={e => updateTechnicalSpec(idx, 'key', e.target.value)}
+                              placeholder="اسم الخاصية (مثال: تصريف النقاطات)..."
+                              className="w-full rounded-lg border border-input bg-background px-3 py-1.5 text-xs font-bold text-foreground outline-none focus:border-primary"
+                            />
+                          </div>
+                          <div>
+                            <input
+                              type="text"
+                              value={spec.value}
+                              onChange={e => updateTechnicalSpec(idx, 'value', e.target.value)}
+                              placeholder="القيمة (مثال: 4 لتر / ساعة)..."
+                              className="w-full rounded-lg border border-input bg-background px-3 py-1.5 text-xs text-foreground outline-none focus:border-primary"
+                            />
+                          </div>
+                          <div className="flex items-center justify-end sm:justify-center">
+                            <button
+                              type="button"
+                              onClick={() => removeTechnicalSpec(idx)}
+                              className="rounded-lg p-1.5 text-rose-600 hover:bg-rose-50 hover:text-rose-700 transition-colors cursor-pointer"
+                              title="حذف المواصفة"
+                            >
                               <X className="h-4 w-4" />
                             </button>
-                          </td>
-                        </tr>
+                          </div>
+                        </div>
                       ))}
-                    </tbody>
-                  </table>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Modular Block A: جدول الأبعاد والمقاسات الهندسية (Optional Dimensions & Technical Matrix) */}
+              <div className={`rounded-2xl border transition-all p-5 shadow-sm space-y-4 ${
+                enableMatrix ? 'border-indigo-500/40 bg-card ring-1 ring-indigo-500/10' : 'border-border bg-card'
+              }`}>
+                {/* Toggle Switch Bar */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-border/50 pb-3">
+                  <label className="flex items-start sm:items-center gap-3 cursor-pointer select-none">
+                    <input
+                      type="checkbox"
+                      checked={enableMatrix}
+                      onChange={e => setEnableMatrix(e.target.checked)}
+                      className="sr-only"
+                    />
+                    <div className={`w-11 h-6 rounded-full transition-colors relative flex items-center px-0.5 shrink-0 mt-0.5 sm:mt-0 ${
+                      enableMatrix ? 'bg-indigo-600' : 'bg-muted-foreground/30'
+                    }`}>
+                      <div className={`w-5 h-5 rounded-full bg-white shadow-md transform transition-transform ${
+                        enableMatrix ? '-translate-x-5' : 'translate-x-0'
+                      }`} />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <span className="font-black text-sm text-foreground">
+                          تفعيل جدول الأبعاد والمقاسات الهندسية (خاص بالقطع والمحابس والوصلات)
+                        </span>
+                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                          enableMatrix ? 'bg-indigo-100 text-indigo-700' : 'bg-muted text-muted-foreground'
+                        }`}>
+                          {enableMatrix ? 'مفعل ✓' : 'معطل'}
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-muted-foreground mt-0.5">
+                        عند التعطيل لن يتم حفظ أي أبعاد سباكة فارغة ولن يظهر الجدول في صفحة المنتج.
+                      </p>
+                    </div>
+                  </label>
+
+                  {enableMatrix && (
+                    <button
+                      type="button"
+                      onClick={addMatrixRow}
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-indigo-600 px-3.5 py-1.5 text-xs font-bold text-white shadow hover:bg-indigo-700 transition-all cursor-pointer self-start sm:self-auto"
+                    >
+                      <Plus className="h-3.5 w-3.5" /> إضافة صف جديد
+                    </button>
+                  )}
                 </div>
+
+                {!enableMatrix ? (
+                  <div className="p-3.5 rounded-xl border border-dashed border-border bg-accent/20 flex items-center gap-2.5 text-xs text-muted-foreground">
+                    <Info className="h-4 w-4 text-indigo-500 shrink-0" />
+                    <span>
+                      جدول الأبعاد الهندسية معطل لهذا المنتج. لن يتم حفظ أي بيانات سباكة فارغة ولن يظهر الجدول في صفحة المنتج (مثالي لخراطيم الري، الفلاتر، ومعدات الري العامة).
+                    </span>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-center text-xs">
+                      <thead>
+                        <tr className="border-b border-border bg-muted/40 font-bold text-muted-foreground">
+                          <th className="p-2">المقاس</th>
+                          <th className="p-2">القطر الخارجي (D)</th>
+                          <th className="p-2">القطر الداخلي (d)</th>
+                          <th className="p-2">السمك (t)</th>
+                          <th className="p-2">نصف القطر (R)</th>
+                          <th className="p-2">الضغط</th>
+                          <th className="p-2">إجراء</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-border">
+                        {safeSizesMatrix.map((row, idx) => (
+                          <tr key={idx} className="hover:bg-accent/20 transition-colors">
+                            <td className="p-1"><input type="text" value={row.size || ''} onChange={e => updateMatrixRow(idx, 'size', e.target.value)} className="w-16 rounded border bg-background p-1 text-center font-bold" /></td>
+                            <td className="p-1"><input type="text" value={row.outer || ''} onChange={e => updateMatrixRow(idx, 'outer', e.target.value)} className="w-20 rounded border bg-background p-1 text-center" /></td>
+                            <td className="p-1"><input type="text" value={row.inner || ''} onChange={e => updateMatrixRow(idx, 'inner', e.target.value)} className="w-20 rounded border bg-background p-1 text-center" /></td>
+                            <td className="p-1"><input type="text" value={row.wall || ''} onChange={e => updateMatrixRow(idx, 'wall', e.target.value)} className="w-16 rounded border bg-background p-1 text-center" /></td>
+                            <td className="p-1"><input type="text" value={row.radius || ''} onChange={e => updateMatrixRow(idx, 'radius', e.target.value)} className="w-16 rounded border bg-background p-1 text-center" /></td>
+                            <td className="p-1"><input type="text" value={row.pressure || ''} onChange={e => updateMatrixRow(idx, 'pressure', e.target.value)} className="w-20 rounded border bg-background p-1 text-center" /></td>
+                            <td className="p-1">
+                              <button type="button" onClick={() => removeMatrixRow(idx)} className="rounded p-1 text-rose-600 hover:bg-rose-50 cursor-pointer" title="حذف الصف">
+                                <X className="h-4 w-4" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
 
               {/* Card 8: مميزات المنتج (Features Checklist) */}
@@ -801,20 +1382,60 @@ const AdminProducts = () => {
                 </div>
                 
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5 text-xs">
-                  {COMMON_FEATURES.map(feat => {
+                  {safeAvailableFeatures.map(feat => {
                     const isChecked = safeSelectedFeatures.includes(feat);
+                    const isCustom = !COMMON_FEATURES.includes(feat);
                     return (
-                      <label key={feat} className={`flex items-center gap-2 p-2.5 rounded-xl border cursor-pointer transition-all ${isChecked ? 'border-purple-500 bg-purple-500/10 font-bold text-purple-700' : 'border-border bg-accent/20 text-muted-foreground'}`}>
-                        <input type="checkbox" checked={isChecked} onChange={() => toggleFeature(feat)} className="rounded text-purple-600" />
-                        <span>{feat}</span>
-                      </label>
+                      <div
+                        key={feat}
+                        onClick={() => toggleFeature(feat)}
+                        className={`group relative flex items-center justify-between gap-2 p-2.5 rounded-xl border cursor-pointer transition-all select-none ${
+                          isChecked
+                            ? 'border-purple-500 bg-purple-500/10 font-bold text-purple-700 shadow-xs'
+                            : 'border-border bg-accent/20 text-muted-foreground hover:bg-accent/40'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 min-w-0 flex-1">
+                          <input
+                            type="checkbox"
+                            checked={isChecked}
+                            onChange={() => toggleFeature(feat)}
+                            className="rounded text-purple-600 shrink-0 pointer-events-none"
+                          />
+                          <span className="truncate">{feat}</span>
+                        </div>
+                        {isCustom && (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeFeatureOption(feat);
+                            }}
+                            className="h-4 w-4 rounded-full bg-rose-500/20 text-rose-600 hover:bg-rose-500 hover:text-white text-[11px] flex items-center justify-center shrink-0 transition-colors cursor-pointer"
+                            title="حذف هذه الميزة"
+                          >
+                            ×
+                          </button>
+                        )}
+                      </div>
                     );
                   })}
                 </div>
 
                 <div className="flex items-center gap-2 pt-2">
-                  <input type="text" value={customFeatureInput} onChange={e => setCustomFeatureInput(e.target.value)} placeholder="إضافة ميزة مخصصة..." className="rounded-xl border border-input bg-background px-3 py-2 text-xs outline-none flex-1" />
-                  <button type="button" onClick={addCustomFeature} className="rounded-xl bg-accent border border-border px-4 py-2 text-xs font-bold text-foreground hover:bg-purple-600 hover:text-white">
+                  <input
+                    type="text"
+                    value={customFeatureInput}
+                    onChange={e => setCustomFeatureInput(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); addCustomFeature(); } }}
+                    placeholder="اكتب اسم الميزة واضغط إضافة (مثال: معالج ضد الأشعة فوق البنفسجية UV)..."
+                    className="rounded-xl border border-input bg-background px-3.5 py-2.5 text-xs outline-none flex-1 focus:border-purple-500 font-medium"
+                  />
+                  <button
+                    type="button"
+                    onClick={addCustomFeature}
+                    className="rounded-xl bg-purple-600 text-white border border-purple-600 px-5 py-2.5 text-xs font-bold hover:bg-purple-700 transition-colors cursor-pointer shrink-0 shadow-xs"
+                  >
                     + إضافة ميزة
                   </button>
                 </div>
@@ -828,8 +1449,30 @@ const AdminProducts = () => {
 
                 <div className="grid gap-3 sm:grid-cols-2 text-xs">
                   <div>
-                    <label className="block font-bold text-foreground mb-1">رابط المنتج (Slug)</label>
-                    <input type="text" value={slug} onChange={e => setSlug(e.target.value)} placeholder="pvc-90-degree-elbow" className="w-full rounded-xl border border-input bg-background p-2.5 text-xs outline-none font-mono" dir="ltr" />
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block font-bold text-foreground">رابط المنتج (Slug)</label>
+                      <button
+                        type="button"
+                        onClick={() => setSlug(generateSlugFromText(title, titleEn, productCode || editingProduct?.id))}
+                        className="text-[10px] text-primary hover:underline font-bold cursor-pointer"
+                      >
+                        ⚡ توليد تلقائي
+                      </button>
+                    </div>
+                    <input
+                      type="text"
+                      value={slug}
+                      onChange={e => setSlug(e.target.value)}
+                      placeholder={generateSlugFromText(title || 'اسم-المنتج', titleEn, productCode)}
+                      className="w-full rounded-xl border border-input bg-background p-2.5 text-xs outline-none font-mono"
+                      dir="ltr"
+                    />
+                    <p className="text-[10px] text-muted-foreground mt-1" dir="ltr">
+                      رابط المعاينة:{' '}
+                      <span className="text-primary font-semibold">
+                        /product/{slug.trim() ? sanitizeSlug(slug) : generateSlugFromText(title || 'product', titleEn, productCode)}
+                      </span>
+                    </p>
                   </div>
                   <div>
                     <label className="block font-bold text-foreground mb-1">عنوان الصفحة (SEO Title)</label>
@@ -991,6 +1634,15 @@ const AdminProducts = () => {
 
                           <td className="p-3.5 text-center">
                             <div className="flex items-center justify-center gap-1">
+                              <a
+                                href={`/product/${encodeURIComponent(p.slug || p.id)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="rounded-lg p-2 text-primary hover:bg-primary/10 cursor-pointer transition-colors"
+                                title="معاينة في المتجر"
+                              >
+                                <Eye className="h-4 w-4" />
+                              </a>
                               <button type="button" onClick={() => handleEdit(p)} className="rounded-lg p-2 text-muted-foreground hover:bg-accent hover:text-foreground cursor-pointer" title="تعديل">
                                 <Edit className="h-4 w-4" />
                               </button>

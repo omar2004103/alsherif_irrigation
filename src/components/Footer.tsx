@@ -26,7 +26,7 @@ const Footer = () => {
   const address = s('address', 'الشعراوي، قطاع غرب النوبارية، مركز حوش عيسى، محافظة البحيرة، مصر');
   const postal = s('postal_code', '5820220');
   const plus = s('plus_code', 'P726+RV2');
-  const mapLink = s('google_map_link', '#');
+  const mapLink = s('google_map_link', 'https://maps.app.goo.gl/MJSzM41LFD4UCEhf8');
   const hours = s('hours', 'السبت - الخميس · 9ص - 6م');
 
   const socials = [

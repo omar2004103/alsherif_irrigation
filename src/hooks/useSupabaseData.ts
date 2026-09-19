@@ -19,15 +19,64 @@ export const useProducts = () => useQuery({
   },
 });
 
-export const useProductBySlug = (slug: string | undefined) => useQuery({
-  queryKey: ['product', slug],
+export const useProductBySlug = (slugOrId: string | undefined) => useQuery({
+  queryKey: ['product', slugOrId],
   queryFn: async () => {
-    if (!slug) return null;
-    const { data, error } = await supabase.from('products').select('*').eq('slug', slug).maybeSingle();
-    if (error) throw error;
-    return data;
+    if (!slugOrId) return null;
+    let decoded = slugOrId.trim();
+    try {
+      decoded = decodeURIComponent(slugOrId).trim();
+    } catch {
+      decoded = slugOrId.trim();
+    }
+
+    // 1. Try slug match with decoded value
+    const { data: bySlug, error: slugError } = await supabase
+      .from('products')
+      .select('*')
+      .eq('slug', decoded)
+      .maybeSingle();
+
+    if (bySlug) return bySlug;
+
+    // 2. If decoded is different from raw parameter, try raw value
+    if (decoded !== slugOrId) {
+      const { data: byRawSlug } = await supabase
+        .from('products')
+        .select('*')
+        .eq('slug', slugOrId)
+        .maybeSingle();
+
+      if (byRawSlug) return byRawSlug;
+    }
+
+    // 3. Fallback: Check if parameter is a valid UUID, search by id
+    const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(decoded);
+    if (isUuid) {
+      const { data: byId } = await supabase
+        .from('products')
+        .select('*')
+        .eq('id', decoded)
+        .maybeSingle();
+
+      if (byId) return byId;
+    }
+
+    // 4. Fallback: Lookup by product_code (SKU)
+    const { data: byCode } = await supabase
+      .from('products')
+      .select('*')
+      .eq('product_code', decoded)
+      .maybeSingle();
+
+    if (byCode) return byCode;
+
+    if (slugError) {
+      console.warn('Product lookup warning:', slugError);
+    }
+    return null;
   },
-  enabled: !!slug,
+  enabled: !!slugOrId,
 });
 
 export const useProductsByIds = (ids: string[]) => useQuery({

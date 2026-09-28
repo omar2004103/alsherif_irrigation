@@ -34,19 +34,32 @@ export const useInquiryNotifications = () => {
 
   useEffect(() => {
     load();
+    const channelTopic = `admin-inquiries-notifs-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
     const channel = supabase
-      .channel('admin-inquiries-notifications')
+      .channel(channelTopic)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'inquiries' }, (payload) => {
         const row = payload.new as any;
         setItems(prev => [row, ...prev].slice(0, 50));
-        toast({ title: '🔔 طلب عرض سعر جديد', description: `${row.customer_name} — ${row.phone}` });
+        toast({ title: '🔔 طلب عرض سعر جديد', description: `${row?.customer_name || 'عميل'} — ${row?.phone || ''}` });
       })
       .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'inquiries' }, (payload) => {
         const row = payload.new as any;
         setItems(prev => prev.map(i => i.id === row.id ? { ...i, ...row } : i));
-      })
-      .subscribe();
-    return () => { supabase.removeChannel(channel); };
+      });
+
+    channel.subscribe((status) => {
+      if (status === 'CHANNEL_ERROR') {
+        console.warn('Realtime channel error on', channelTopic);
+      }
+    });
+
+    return () => {
+      try {
+        supabase.removeChannel(channel);
+      } catch (err) {
+        console.warn('Failed to remove channel:', err);
+      }
+    };
   }, [load]);
 
   const unread = items.filter(i => !readIds.includes(i.id));

@@ -1,14 +1,68 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect, Component, ErrorInfo, ReactNode } from 'react';
 import { useNavigate, Outlet, Link, useLocation, NavLink } from 'react-router-dom';
 import {
   LayoutDashboard, Package, FolderOpen, MessageSquare, Settings, LogOut, Menu, X,
   Image as ImageIcon, FileText, Users, ChevronLeft, ChevronDown, Building2, Bell,
-  UserCircle, Wrench, Inbox, PlusCircle, ListChecks,
+  UserCircle, Wrench, Inbox, PlusCircle, ListChecks, AlertTriangle, RefreshCw
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useInquiryNotifications } from '@/hooks/useInquiryNotifications';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
 import logoAsset from '@/assets/al-sherif-logo.png.asset.json';
+
+interface AdminOutletErrorBoundaryProps {
+  children: ReactNode;
+}
+
+interface AdminOutletErrorBoundaryState {
+  hasError: boolean;
+  error?: Error;
+}
+
+class AdminOutletErrorBoundary extends Component<AdminOutletErrorBoundaryProps, AdminOutletErrorBoundaryState> {
+  constructor(props: AdminOutletErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError(error: Error): AdminOutletErrorBoundaryState {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error('AdminOutlet caught error:', error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="rounded-2xl border border-destructive/20 bg-destructive/5 p-8 text-center my-6 max-w-xl mx-auto" dir="rtl">
+          <AlertTriangle className="h-10 w-10 text-destructive mx-auto mb-3" />
+          <h2 className="text-lg font-bold text-destructive mb-1">حدث خطأ أثناء تحميل محتوى الصفحة</h2>
+          <p className="text-xs text-muted-foreground mb-4">
+            {this.state.error?.message || 'تعذر عرض هذه الصفحة حالياً'}
+          </p>
+          <div className="flex items-center justify-center gap-2">
+            <button
+              onClick={() => this.setState({ hasError: false })}
+              className="inline-flex items-center gap-1.5 px-4 py-2 bg-primary text-primary-foreground rounded-xl text-xs font-bold hover:opacity-90 transition-opacity"
+            >
+              <RefreshCw className="h-3.5 w-3.5" />
+              إعادة المحاولة
+            </button>
+            <button
+              onClick={() => window.location.reload()}
+              className="px-4 py-2 bg-muted text-muted-foreground hover:text-foreground rounded-xl text-xs font-bold transition-colors"
+            >
+              تحديث الصفحة بالكامل
+            </button>
+          </div>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 type NavLeaf = { label: string; icon: any; path: string; badgeKey?: 'inquiries' };
 type NavGroup = { label: string; icon: any; key: string; children: NavLeaf[] };
@@ -166,7 +220,11 @@ const AdminLayout = () => {
             </Link>
           </div>
         </header>
-        <main className="p-4 lg:p-6"><Outlet /></main>
+        <main className="p-4 lg:p-6">
+          <AdminOutletErrorBoundary>
+            <Outlet />
+          </AdminOutletErrorBoundary>
+        </main>
       </div>
     </div>
   );

@@ -1,54 +1,73 @@
 import { Helmet } from 'react-helmet-async';
 import { motion } from 'framer-motion';
-import { Settings, Truck, Headphones, Wrench, Droplets, ClipboardCheck, Cog, Zap } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import FloatingActions from '@/components/FloatingActions';
+import { useServicesData } from '@/hooks/useServicesData';
+import { SERVICE_ICONS } from '@/data/servicesData';
 
-const services = [
-  { icon: ClipboardCheck, title: 'الاستشارات الهندسية', desc: 'دراسة التربة والمحصول والمناخ لتصميم نظام الري الأمثل لمشروعك.' },
-  { icon: Cog, title: 'تصميم أنظمة الري', desc: 'تصميم مخططات هندسية دقيقة لشبكات الري بالتنقيط والرش والمحوري.' },
-  { icon: Truck, title: 'التوريد', desc: 'توريد جميع مستلزمات الري من أفضل الماركات العالمية والمحلية.' },
-  { icon: Wrench, title: 'التركيب', desc: 'تركيب احترافي على يد فنيين متخصصين مع ضمان شامل على الأعمال.' },
-  { icon: Droplets, title: 'ترشيد المياه', desc: 'حلول متقدمة لترشيد استهلاك المياه وزيادة كفاءة الري.' },
-  { icon: Zap, title: 'الأتمتة والتحكم', desc: 'أنظمة تحكم ذكية وأتمتة كاملة للتشغيل عن بُعد.' },
-  { icon: Settings, title: 'الصيانة الدورية', desc: 'برامج صيانة دورية لضمان استمرارية عمل الشبكة بأعلى كفاءة.' },
-  { icon: Headphones, title: 'الدعم الفني', desc: 'فريق دعم متاح للرد على استفساراتك وحل المشكلات فورًا.' },
-];
+const ServicesPage = () => {
+  const { services } = useServicesData();
 
-const ServicesPage = () => (
-  <div className="min-h-screen bg-background">
-    <Helmet>
-      <title>خدماتنا — آل شريف لنظم الري الحديث</title>
-      <meta name="description" content="استشارات، تصميم، توريد، تركيب، أتمتة، وصيانة أنظمة الري الحديث للمشاريع الزراعية." />
-      <link rel="canonical" href="https://alsherif-irrigation.lovable.app/services" />
-    </Helmet>
-    <Navbar />
-    <main className="pt-28">
-      <section className="relative overflow-hidden bg-[hsl(var(--sherif-blue-deep))] py-20 text-primary-foreground">
-        <div className="absolute inset-0 blueprint-grid opacity-[0.06]" />
-        <div className="container relative">
-          <p className="mb-3 text-xs font-bold tracking-[0.3em] text-primary-foreground/60">02 / SERVICES</p>
-          <h1 className="max-w-3xl text-4xl font-extrabold sm:text-5xl">خدماتنا الهندسية</h1>
-          <p className="mt-4 max-w-2xl text-primary-foreground/75 leading-relaxed">
-            حزمة خدمات متكاملة من الاستشارة حتى الصيانة، لضمان نجاح مشروعك الزراعي.
-          </p>
-        </div>
-      </section>
+  return (
+    <div className="min-h-screen bg-background">
+      <Helmet>
+        <title>خدماتنا — آل شريف لنظم الري الحديث</title>
+        <meta name="description" content="استشارات، تصميم، توريد، تركيب، أتمتة، وصيانة أنظمة الري الحديث للمشاريع الزراعية." />
+        <link rel="canonical" href="https://alsherif-irrigation.lovable.app/services" />
+      </Helmet>
+      <Navbar />
+      <main className="pt-28">
+        <section className="relative overflow-hidden bg-[hsl(var(--sherif-blue-deep))] py-20 text-primary-foreground">
+          <div className="absolute inset-0 blueprint-grid opacity-[0.06]" />
+          <div className="container relative">
+            <p className="mb-3 text-xs font-bold tracking-[0.3em] text-primary-foreground/60">02 / SERVICES</p>
+            <h1 className="max-w-3xl text-4xl font-extrabold sm:text-5xl">خدماتنا الهندسية</h1>
+            <p className="mt-4 max-w-2xl text-primary-foreground/75 leading-relaxed">
+              حزمة خدمات متكاملة من الاستشارة حتى الصيانة، لضمان نجاح مشروعك الزراعي.
+            </p>
+          </div>
+        </section>
 
-      <section className="py-20">
-        <div className="container grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-          {services.map((s, i) => (
-            <motion.div key={s.title} initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.05 }}
-              className="rounded-2xl border border-border bg-card p-6 shadow-card hover:shadow-card-hover hover:-translate-y-1 transition-all">
-              <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl gradient-accent text-primary-foreground"><s.icon className="h-7 w-7" /></div>
-              <h3 className="mb-2 text-lg font-bold text-foreground">{s.title}</h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">{s.desc}</p>
-            </motion.div>
-          ))}
-        </div>
-      </section>
+        <section className="py-20">
+          <div className="container grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+            {services.map((s, i) => {
+              const Icon = SERVICE_ICONS[s.iconName];
+              return (
+                <motion.div
+                  key={s.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.05 }}
+                  className="group flex flex-col rounded-2xl border border-border bg-card p-6 shadow-card hover:shadow-card-hover hover:-translate-y-1 transition-all overflow-hidden"
+                >
+                  {/* Optional Service Image: rendered only when present, with no blank container or placeholder when absent */}
+                  {s.image_url && (
+                    <div className="relative -mx-6 -mt-6 mb-5 aspect-[16/10] overflow-hidden bg-muted border-b border-border/60">
+                      <img
+                        src={s.image_url}
+                        alt={s.title}
+                        loading="lazy"
+                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        onError={(e) => {
+                          (e.target as HTMLElement).parentElement?.classList.add('hidden');
+                        }}
+                      />
+                    </div>
+                  )}
+
+                  <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl gradient-accent text-primary-foreground">
+                    <Icon className="h-7 w-7" />
+                  </div>
+                  <h3 className="mb-2 text-lg font-bold text-foreground">{s.title}</h3>
+                  <p className="text-sm text-muted-foreground leading-relaxed flex-1">{s.desc}</p>
+                </motion.div>
+              );
+            })}
+          </div>
+        </section>
 
       <section className="py-20 bg-muted/30">
         <div className="container">
@@ -88,6 +107,7 @@ const ServicesPage = () => (
     <Footer />
     <FloatingActions />
   </div>
-);
+  );
+};
 
 export default ServicesPage;

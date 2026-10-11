@@ -29,7 +29,7 @@ function mergeWithCanonical(storedList: Partial<ServiceItem>[]): ServiceItem[] {
       desc: matched?.desc && matched.desc.trim() ? matched.desc.trim() : canonical.desc,
       detailed_description: matched?.detailed_description && matched.detailed_description.trim()
         ? matched.detailed_description.trim()
-        : null,
+        : canonical.detailed_description,
       image_url: mainImg,
       gallery_images: galleryImg,
     };

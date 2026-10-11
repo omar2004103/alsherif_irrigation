@@ -10,7 +10,8 @@ import {
   ChevronRight,
   Maximize2,
   Image as ImageIcon,
-  CheckCircle2
+  CheckCircle2,
+  Phone
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
@@ -22,6 +23,7 @@ import { SERVICE_ICONS, ServiceItem } from '@/data/servicesData';
 const ServicesPage = () => {
   const { services } = useServicesData();
   const { s } = useSiteSettings();
+  const phone1 = s('phone1', '01111661177');
   const whatsapp = s('whatsapp', '201111661177');
 
   // Modal state for service details
@@ -93,74 +95,82 @@ const ServicesPage = () => {
 
         {/* Services Grid Section */}
         <section className="py-20">
-          <div className="container grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {services.map((s, i) => {
-              const Icon = SERVICE_ICONS[s.iconName];
-              const gallery = getServiceGallery(s);
-              const hasDetailedView = Boolean(
-                (s.detailed_description && s.detailed_description.trim()) || gallery.length > 0
-              );
+          <div className="container">
+            <div className="mb-10 text-center max-w-2xl mx-auto">
+              <span className="section-label">منظومة الخدمات</span>
+              <h2 className="mt-2 text-3xl font-extrabold text-foreground sm:text-4xl">
+                خدمات متكاملة تغطي كافة مراحل المشروع
+              </h2>
+              <p className="mt-2 text-sm text-muted-foreground">
+                اضغط على أي خدمة للاطلاع على التفاصيل الهندسية الكاملة ونطاق التنفيذ الميداني.
+              </p>
+            </div>
 
-              return (
-                <motion.div
-                  key={s.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: i * 0.05 }}
-                  className="group flex flex-col rounded-2xl border border-border bg-card p-6 shadow-card hover:shadow-card-hover hover:-translate-y-1 transition-all overflow-hidden"
-                >
-                  {/* Optional Service Main Cover Image */}
-                  {s.image_url && (
-                    <div
-                      className={`relative -mx-6 -mt-6 mb-5 aspect-[16/10] overflow-hidden bg-muted border-b border-border/60 ${
-                        hasDetailedView ? 'cursor-pointer' : ''
-                      }`}
-                      onClick={() => {
-                        if (hasDetailedView) handleOpenDetails(s);
-                      }}
-                    >
-                      <img
-                        src={s.image_url}
-                        alt={s.title}
-                        loading="lazy"
-                        className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
-                        onError={(e) => {
-                          (e.target as HTMLElement).parentElement?.classList.add('hidden');
-                        }}
-                      />
-                      {gallery.length > 1 && (
-                        <div className="absolute bottom-2 left-2 rounded-md bg-black/60 backdrop-blur-sm px-2 py-0.5 text-[10px] font-semibold text-white flex items-center gap-1">
-                          <ImageIcon className="h-3 w-3" />
-                          <span>{gallery.length} صور</span>
-                        </div>
-                      )}
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              {services.map((s, i) => {
+                const Icon = SERVICE_ICONS[s.iconName];
+                const gallery = getServiceGallery(s);
+
+                return (
+                  <motion.div
+                    key={s.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: i * 0.05 }}
+                    onClick={() => handleOpenDetails(s)}
+                    className="group flex flex-col rounded-2xl border border-border bg-card p-6 shadow-card hover:shadow-card-hover hover:-translate-y-1 transition-all overflow-hidden cursor-pointer"
+                  >
+                    {/* Optional Service Main Cover Image */}
+                    {s.image_url && (
+                      <div className="relative -mx-6 -mt-6 mb-5 aspect-[16/10] overflow-hidden bg-muted border-b border-border/60">
+                        <img
+                          src={s.image_url}
+                          alt={s.title}
+                          loading="lazy"
+                          className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                          onError={(e) => {
+                            (e.target as HTMLElement).parentElement?.classList.add('hidden');
+                          }}
+                        />
+                        {gallery.length > 1 && (
+                          <div className="absolute bottom-2 left-2 rounded-md bg-black/60 backdrop-blur-sm px-2 py-0.5 text-[10px] font-semibold text-white flex items-center gap-1">
+                            <ImageIcon className="h-3 w-3" />
+                            <span>{gallery.length} صور</span>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl gradient-accent text-primary-foreground shadow-sm">
+                      <Icon className="h-7 w-7" />
                     </div>
-                  )}
 
-                  <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl gradient-accent text-primary-foreground shadow-sm">
-                    <Icon className="h-7 w-7" />
-                  </div>
+                    <h3 className="mb-2 text-lg font-bold text-foreground leading-snug group-hover:text-primary transition-colors">
+                      {s.title}
+                    </h3>
+                    <p className="text-sm text-muted-foreground leading-relaxed flex-1">
+                      {s.desc}
+                    </p>
 
-                  <h3 className="mb-2 text-lg font-bold text-foreground leading-snug">{s.title}</h3>
-                  <p className="text-sm text-muted-foreground leading-relaxed flex-1">{s.desc}</p>
-
-                  {/* Optional Detail Link Button */}
-                  {hasDetailedView && (
+                    {/* Always Visible Detail Button */}
                     <div className="mt-4 pt-3 border-t border-border/60">
                       <button
                         type="button"
-                        onClick={() => handleOpenDetails(s)}
-                        className="inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:gap-2.5 transition-all"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenDetails(s);
+                        }}
+                        className="inline-flex items-center gap-1.5 text-xs font-bold text-primary group-hover:text-primary hover:gap-2.5 transition-all"
                       >
-                        <span>تفاصيل الخدمة والصور</span>
+                        <span>عرض تفاصيل الخدمة</span>
                         <ArrowLeft className="h-3.5 w-3.5" />
                       </button>
                     </div>
-                  )}
-                </motion.div>
-              );
-            })}
+                  </motion.div>
+                );
+              })}
+            </div>
           </div>
         </section>
 
@@ -267,7 +277,7 @@ const ServicesPage = () => {
               </div>
 
               {/* Short Description */}
-              <div className="rounded-2xl bg-muted/30 p-4 border border-border/60 mb-6">
+              <div className="rounded-2xl bg-muted/40 p-4 border border-border/60 mb-6">
                 <p className="text-sm font-semibold text-foreground leading-relaxed">
                   {selectedService.desc}
                 </p>
@@ -321,14 +331,14 @@ const ServicesPage = () => {
                 );
               })()}
 
-              {/* Detailed Description (if present) */}
+              {/* Detailed Description */}
               {selectedService.detailed_description && selectedService.detailed_description.trim() && (
                 <div className="mb-6 space-y-2">
                   <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
                     <FileText className="h-4 w-4 text-primary" />
-                    <span>تفاصيل الخدمة ونطاق العمل الهندسـي:</span>
+                    <span>تفاصيل الخدمة ونطاق العمل الهندسي:</span>
                   </h4>
-                  <div className="rounded-2xl border border-border/80 bg-card p-4 text-xs sm:text-sm leading-relaxed text-foreground/90 whitespace-pre-line">
+                  <div className="rounded-2xl border border-border/80 bg-muted/20 p-4 text-xs sm:text-sm leading-relaxed text-foreground/90 whitespace-pre-line">
                     {selectedService.detailed_description}
                   </div>
                 </div>

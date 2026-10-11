@@ -1,5 +1,6 @@
 import { motion } from 'framer-motion';
-import { Settings, Truck, Headphones } from 'lucide-react';
+import { Settings, Truck, Headphones, ArrowLeft } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const services = [
   { icon: Settings, title: 'استشارات فنية', desc: 'نقدم استشارات متخصصة لتصميم أنظمة الري المناسبة لمشروعك الزراعي مع دراسة التربة والمحصول والمناخ.' },
@@ -30,15 +31,32 @@ const ServicesSection = () => {
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
               transition={{ delay: i * 0.15 }}
-              className="rounded-2xl border border-border bg-card p-8 shadow-card transition-all hover:shadow-card-hover hover:-translate-y-1 text-center"
+              className="rounded-2xl border border-border bg-card p-8 shadow-card transition-all hover:shadow-card-hover hover:-translate-y-1 text-center flex flex-col items-center"
             >
               <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl gradient-accent text-primary-foreground">
                 <s.icon className="h-8 w-8" />
               </div>
               <h3 className="mb-3 text-xl font-bold text-foreground">{s.title}</h3>
-              <p className="text-sm leading-relaxed text-muted-foreground">{s.desc}</p>
+              <p className="text-sm leading-relaxed text-muted-foreground flex-1">{s.desc}</p>
+              <Link
+                to="/services"
+                className="mt-5 inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:gap-2.5 transition-all"
+              >
+                <span>تفاصيل الخدمة الكاملة</span>
+                <ArrowLeft className="h-3.5 w-3.5" />
+              </Link>
             </motion.div>
           ))}
+        </div>
+
+        <div className="mt-12 text-center">
+          <Link
+            to="/services"
+            className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-sm font-bold text-primary-foreground hover:bg-primary/90 transition-all shadow-md hover:scale-[1.02]"
+          >
+            <span>استعراض كافة الخدمات الهندسية (8 خدمات)</span>
+            <ArrowLeft className="h-4 w-4" />
+          </Link>
         </div>
       </div>
     </section>

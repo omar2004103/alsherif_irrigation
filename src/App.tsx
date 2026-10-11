@@ -30,6 +30,7 @@ import AdminTips from "./pages/AdminTips";
 import AdminUsers from "./pages/AdminUsers";
 import AdminBrands from "./pages/AdminBrands";
 import AdminServices from "./pages/AdminServices";
+import AdminProjects from "./pages/AdminProjects";
 import AdminMessages from "./pages/AdminMessages";
 import AdminMedia from "./pages/AdminMedia";
 
@@ -97,6 +98,7 @@ const App = () => (
             <Route path="tips" element={<AdminTips />} />
             <Route path="users" element={<AdminUsers />} />
             <Route path="services" element={<AdminServices />} />
+            <Route path="projects" element={<AdminProjects />} />
             <Route path="messages" element={<AdminMessages />} />
             <Route path="media" element={<AdminMedia />} />
 

@@ -1,10 +1,11 @@
 import { motion } from 'framer-motion';
 import { ArrowLeft, MapPin, Layers } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { PROJECTS_DATA } from '@/data/projectsData';
+import { useProjectsData } from '@/hooks/useProjectsData';
 
 const ProjectsSection = () => {
-  const featuredProjects = PROJECTS_DATA.slice(0, 3);
+  const { projects } = useProjectsData();
+  const featuredProjects = projects.slice(0, 3);
 
   return (
     <section id="projects" className="py-24 lg:py-32 bg-background border-t border-border/50">

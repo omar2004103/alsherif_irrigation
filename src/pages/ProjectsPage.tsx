@@ -24,9 +24,9 @@ import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import FloatingActions from '@/components/FloatingActions';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
+import { useProjectsData } from '@/hooks/useProjectsData';
 import heroImg from '@/assets/hero-irrigation.jpg';
 import {
-  PROJECTS_DATA,
   PROJECT_CATEGORIES,
   ProjectItem,
   ProjectCategory
@@ -34,6 +34,7 @@ import {
 
 const ProjectsPage = () => {
   const { s } = useSiteSettings();
+  const { projects } = useProjectsData();
   const phone1 = s('phone1', '01111661177');
   const whatsapp = s('whatsapp', '201111661177');
   const nameAr = s('company_name_ar', 'آل شريف لنظم الري الحديث');
@@ -44,8 +45,8 @@ const ProjectsPage = () => {
 
   // Filter projects based on activeCategory
   const filteredProjects = activeCategory === 'الكل'
-    ? PROJECTS_DATA
-    : PROJECTS_DATA.filter(p => p.category === activeCategory);
+    ? projects
+    : projects.filter(p => p.category === activeCategory);
 
   const handleOpenModal = (project: ProjectItem) => {
     setSelectedProject(project);
@@ -238,8 +239,8 @@ const ProjectsPage = () => {
             <div className="mb-12 flex flex-wrap items-center justify-center gap-2">
               {PROJECT_CATEGORIES.map(category => {
                 const count = category.id === 'الكل'
-                  ? PROJECTS_DATA.length
-                  : PROJECTS_DATA.filter(p => p.category === category.id).length;
+                  ? projects.length
+                  : projects.filter(p => p.category === category.id).length;
 
                 // Don't show category pills that have 0 projects
                 if (count === 0) return null;

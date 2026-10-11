@@ -3,7 +3,7 @@ import { useNavigate, Outlet, Link, useLocation, NavLink } from 'react-router-do
 import {
   LayoutDashboard, Package, FolderOpen, MessageSquare, Settings, LogOut, Menu, X,
   Image as ImageIcon, FileText, Users, ChevronLeft, ChevronDown, Building2, Bell,
-  UserCircle, Wrench, Inbox, PlusCircle, ListChecks, AlertTriangle, RefreshCw
+  UserCircle, Wrench, Inbox, PlusCircle, ListChecks, AlertTriangle, RefreshCw, FolderKanban
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useInquiryNotifications } from '@/hooks/useInquiryNotifications';
@@ -84,6 +84,12 @@ const NAV: NavItem[] = [
     label: '🛠️ الخدمات', icon: Wrench, key: 'services', children: [
       { label: 'كل الخدمات', icon: ListChecks, path: '/admin/services' },
       { label: 'إضافة خدمة جديدة', icon: PlusCircle, path: '/admin/services?new=1' },
+    ],
+  },
+  {
+    label: '🚜 المشاريع', icon: FolderKanban, key: 'projects', children: [
+      { label: 'كل المشاريع', icon: ListChecks, path: '/admin/projects' },
+      { label: 'إضافة مشروع جديد', icon: PlusCircle, path: '/admin/projects?new=1' },
     ],
   },
   {

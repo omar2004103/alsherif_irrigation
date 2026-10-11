@@ -15,9 +15,23 @@ function mergeWithCanonical(storedList: Partial<ServiceItem>[]): ServiceItem[] {
 
   return SERVICES_DATA.map(canonical => {
     const matched = storedMap.get(canonical.id) || storedMap.get(canonical.title);
+    const mainImg = matched?.image_url && matched.image_url.trim() ? matched.image_url.trim() : null;
+    const rawGallery = Array.isArray(matched?.gallery_images)
+      ? matched.gallery_images.filter((img): img is string => typeof img === 'string' && img.trim().length > 0)
+      : [];
+
+    // Enforce 10 images total maximum (1 main + up to 9 gallery)
+    const maxAdditional = mainImg ? 9 : 10;
+    const galleryImg = rawGallery.slice(0, maxAdditional);
+
     return {
       ...canonical,
-      image_url: matched?.image_url ? matched.image_url.trim() : null,
+      desc: matched?.desc && matched.desc.trim() ? matched.desc.trim() : canonical.desc,
+      detailed_description: matched?.detailed_description && matched.detailed_description.trim()
+        ? matched.detailed_description.trim()
+        : null,
+      image_url: mainImg,
+      gallery_images: galleryImg,
     };
   });
 }
@@ -88,14 +102,27 @@ export function useServicesData() {
 
   const saveMutation = useMutation({
     mutationFn: async (updatedServices: ServiceItem[]) => {
-      // 1. Update local cache immediately
-      setLocalServicesCache(updatedServices);
+      // 1. Sanitize & enforce 10 images limit before saving
+      const sanitized = updatedServices.map(s => {
+        const main = s.image_url && s.image_url.trim() ? s.image_url.trim() : null;
+        const maxGal = main ? 9 : 10;
+        const gal = (s.gallery_images || []).filter(img => typeof img === 'string' && img.trim().length > 0).slice(0, maxGal);
+        return {
+          ...s,
+          image_url: main,
+          gallery_images: gal,
+          detailed_description: s.detailed_description && s.detailed_description.trim() ? s.detailed_description.trim() : null,
+        };
+      });
 
-      // 2. Persist to Supabase site_settings
+      // 2. Update local cache immediately
+      setLocalServicesCache(sanitized);
+
+      // 3. Persist to Supabase site_settings
       const { error } = await supabase.from('site_settings').upsert(
         {
           key: SETTING_KEY,
-          value: JSON.stringify(updatedServices),
+          value: JSON.stringify(sanitized),
         },
         { onConflict: 'key' }
       );
@@ -105,17 +132,17 @@ export function useServicesData() {
         throw error;
       }
 
-      return updatedServices;
+      return sanitized;
     },
-    onSuccess: (updatedServices) => {
-      queryClient.setQueryData(['services_data'], updatedServices);
+    onSuccess: (sanitized) => {
+      queryClient.setQueryData(['services_data'], sanitized);
       queryClient.invalidateQueries({ queryKey: ['services_data'] });
       queryClient.invalidateQueries({ queryKey: ['site_settings'] });
     },
   });
 
-  const updateServiceImage = async (id: string, imageUrl: string | null) => {
-    const updated = services.map(s => (s.id === id ? { ...s, image_url: imageUrl ? imageUrl.trim() : null } : s));
+  const updateService = async (id: string, partial: Partial<ServiceItem>) => {
+    const updated = services.map(s => (s.id === id ? { ...s, ...partial } : s));
     await saveMutation.mutateAsync(updated);
   };
 
@@ -123,7 +150,7 @@ export function useServicesData() {
     services,
     isLoading,
     saveServices: saveMutation.mutateAsync,
-    updateServiceImage,
+    updateService,
     isSaving: saveMutation.isPending,
   };
 }

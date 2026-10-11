@@ -3,9 +3,9 @@ import { Settings, Truck, Headphones, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
 const services = [
-  { icon: Settings, title: 'استشارات فنية', desc: 'نقدم استشارات متخصصة لتصميم أنظمة الري المناسبة لمشروعك الزراعي مع دراسة التربة والمحصول والمناخ.' },
-  { icon: Truck, title: 'توريد وتركيب', desc: 'نوفر جميع مستلزمات الري مع خدمة تركيب احترافية على يد فنيين متخصصين وضمان شامل على الأعمال.' },
-  { icon: Headphones, title: 'دعم ما بعد البيع', desc: 'فريق دعم فني متاح لمساعدتك في الصيانة وحل المشكلات والتوسعات المستقبلية لشبكة الري.' },
+  { id: 'consulting', icon: Settings, title: 'استشارات فنية', desc: 'نقدم استشارات متخصصة لتصميم أنظمة الري المناسبة لمشروعك الزراعي مع دراسة التربة والمحصول والمناخ.' },
+  { id: 'supply', icon: Truck, title: 'توريد وتركيب', desc: 'نوفر جميع مستلزمات الري مع خدمة تركيب احترافية على يد فنيين متخصصين وضمان شامل على الأعمال.' },
+  { id: 'support', icon: Headphones, title: 'دعم ما بعد البيع', desc: 'فريق دعم فني متاح لمساعدتك في الصيانة وحل المشكلات والتوسعات المستقبلية لشبكة الري.' },
 ];
 
 const ServicesSection = () => {
@@ -39,7 +39,7 @@ const ServicesSection = () => {
               <h3 className="mb-3 text-xl font-bold text-foreground">{s.title}</h3>
               <p className="text-sm leading-relaxed text-muted-foreground flex-1">{s.desc}</p>
               <Link
-                to="/services"
+                to={`/services?id=${s.id}`}
                 className="mt-5 inline-flex items-center gap-1.5 text-xs font-bold text-primary hover:gap-2.5 transition-all"
               >
                 <span>تفاصيل الخدمة الكاملة</span>

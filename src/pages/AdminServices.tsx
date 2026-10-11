@@ -619,7 +619,10 @@ const AdminServices: React.FC = () => {
               )}
 
               <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl gradient-accent text-primary-foreground">
-                {React.createElement(SERVICE_ICONS[previewService.iconName], { className: 'h-7 w-7' })}
+                {(() => {
+                  const PreviewIcon = (previewService.iconName && SERVICE_ICONS[previewService.iconName]) || Wrench;
+                  return <PreviewIcon className="h-7 w-7" />;
+                })()}
               </div>
 
               <h4 className="mb-2 text-lg font-bold text-foreground">{previewService.title}</h4>

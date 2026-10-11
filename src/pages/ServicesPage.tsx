@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet-async';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import {
   ArrowLeft,
   X,
@@ -11,40 +11,65 @@ import {
   Maximize2,
   Image as ImageIcon,
   CheckCircle2,
-  Phone
+  Phone,
+  Wrench,
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
 import FloatingActions from '@/components/FloatingActions';
 import { useServicesData } from '@/hooks/useServicesData';
 import { useSiteSettings } from '@/hooks/useSiteSettings';
-import { SERVICE_ICONS, ServiceItem } from '@/data/servicesData';
+import { SERVICE_ICONS, ServiceItem, ServiceIconName } from '@/data/servicesData';
 
 const ServicesPage = () => {
   const { services } = useServicesData();
   const { s } = useSiteSettings();
-  const phone1 = s('phone1', '01111661177');
-  const whatsapp = s('whatsapp', '201111661177');
+  const [searchParams] = useSearchParams();
+  const phone1 = s('phone1', '01111661177') || '01111661177';
+  const whatsapp = s('whatsapp', '201111661177') || '201111661177';
 
   // Modal state for service details
   const [selectedService, setSelectedService] = useState<ServiceItem | null>(null);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
 
+  // Safe icon resolver with reliable fallback
+  const getServiceIcon = (iconName?: ServiceIconName | string) => {
+    if (iconName && iconName in SERVICE_ICONS) {
+      return SERVICE_ICONS[iconName as ServiceIconName];
+    }
+    return Wrench;
+  };
+
   // Helper to get all available images for modal gallery
-  const getServiceGallery = (service: ServiceItem): string[] => {
+  const getServiceGallery = (service: ServiceItem | null | undefined): string[] => {
+    if (!service) return [];
     const list: string[] = [];
-    if (service.image_url && service.image_url.trim()) {
+    if (service.image_url && typeof service.image_url === 'string' && service.image_url.trim()) {
       list.push(service.image_url.trim());
     }
     if (Array.isArray(service.gallery_images)) {
       service.gallery_images.forEach(img => {
-        if (img && img.trim() && !list.includes(img.trim())) {
+        if (img && typeof img === 'string' && img.trim() && !list.includes(img.trim())) {
           list.push(img.trim());
         }
       });
     }
     return list;
   };
+
+  // Automatically open service if specified in URL query params (?service=... or ?id=...)
+  useEffect(() => {
+    const targetId = searchParams.get('service') || searchParams.get('id');
+    if (targetId && services && services.length > 0) {
+      const match = services.find(
+        item => item.id.toLowerCase() === targetId.toLowerCase() || item.title === targetId
+      );
+      if (match) {
+        setSelectedService(match);
+        setActiveImageIndex(0);
+      }
+    }
+  }, [searchParams, services]);
 
   const handleOpenDetails = (service: ServiceItem) => {
     setSelectedService(service);
@@ -108,7 +133,7 @@ const ServicesPage = () => {
 
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
               {services.map((s, i) => {
-                const Icon = SERVICE_ICONS[s.iconName];
+                const Icon = getServiceIcon(s.iconName);
                 const gallery = getServiceGallery(s);
 
                 return (
@@ -262,19 +287,24 @@ const ServicesPage = () => {
               </button>
 
               {/* Modal Header */}
-              <div className="flex items-center gap-3.5 mb-6 pr-2">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl gradient-accent text-primary-foreground shrink-0 shadow-sm">
-                  {React.createElement(SERVICE_ICONS[selectedService.iconName], { className: 'h-6 w-6' })}
-                </div>
-                <div>
-                  <h2 className="text-2xl font-black text-foreground">
-                    {selectedService.title}
-                  </h2>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    خدمات آل شريف لنظم الري الحديث
-                  </p>
-                </div>
-              </div>
+              {(() => {
+                const ModalIcon = getServiceIcon(selectedService?.iconName);
+                return (
+                  <div className="flex items-center gap-3.5 mb-6 pr-2">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-2xl gradient-accent text-primary-foreground shrink-0 shadow-sm">
+                      <ModalIcon className="h-6 w-6" />
+                    </div>
+                    <div>
+                      <h2 className="text-2xl font-black text-foreground">
+                        {selectedService.title}
+                      </h2>
+                      <p className="text-xs text-muted-foreground mt-0.5">
+                        خدمات آل شريف لنظم الري الحديث
+                      </p>
+                    </div>
+                  </div>
+                );
+              })()}
 
               {/* Short Description */}
               <div className="rounded-2xl bg-muted/40 p-4 border border-border/60 mb-6">

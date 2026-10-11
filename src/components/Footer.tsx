@@ -7,6 +7,7 @@ const quickLinks = [
   { label: 'الرئيسية', href: '/' },
   { label: 'من نحن', href: '/about' },
   { label: 'المنتجات', href: '/products' },
+  { label: 'المشاريع', href: '/projects' },
   { label: 'خدماتنا', href: '/services' },
   { label: 'المدونة', href: '/blog' },
   { label: 'تواصل معنا', href: '/contact' },

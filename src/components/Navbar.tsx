@@ -11,7 +11,7 @@ const navLinks = [
   { label: '🏠 الرئيسية', href: '/', isRoute: true },
   { label: '📦 المنتجات', href: '/products', isRoute: true },
   { label: '🛠️ الخدمات', href: '/services', isRoute: true },
-  { label: '🚜 المشاريع', href: '/#projects', isRoute: false },
+  { label: '🚜 المشاريع', href: '/projects', isRoute: true },
   { label: '📰 المقالات', href: '/blog', isRoute: true },
   { label: '🏢 من نحن', href: '/about', isRoute: true },
   { label: '📞 تواصل معنا', href: '/contact', isRoute: true },
